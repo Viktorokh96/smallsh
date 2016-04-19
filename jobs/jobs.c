@@ -3,13 +3,6 @@
 #include "handlers.h"
 #include "../parses/parse.h"
 
-static job job_sh; /* Структура для описания обработчика */
-
-#define add_job(n,h) \
-				job_sh.name = (n); \
-				job_sh.handler = &(h); \
-				list_add(&job_sh,sizeof(job),sh_jobs)
-
 /* Поиск встроенной команды оболочки */
 int (* is_shell_cmd(char *cmd)) (void *)
 {
@@ -25,6 +18,7 @@ int (* is_shell_cmd(char *cmd)) (void *)
 void init_jobs()
 {
 	sh_jobs = init_list();
+	bg_jobs = init_list();
 
 	add_job("exit",	exit_handl);
 	add_job("pwd",	pwd_handl);
@@ -34,4 +28,5 @@ void init_jobs()
 void del_jobs()
 {
 	list_del(sh_jobs);
+	list_del(bg_jobs);
 }

@@ -3,6 +3,7 @@
 //#define USE_DEPRICATED 
 /* Размер строки выделенную под команды */
 #define CMD_SIZE	256
+#define STR_SIZE	128
 
 /* Режимы инициализации для init_shell() */
 #define SIGNAL		0x0001

@@ -1,9 +1,9 @@
 #ifndef HANDLER_H
 #define HANDLER_H
 #include "../general.h"
-#include "../shell.h"
 #include <unistd.h>
 #include <stdlib.h>
+#include "../shell.h"
 
 int exit_handl(void *prm)
 {

@@ -58,6 +58,7 @@ char **prepare_args()
 		memcpy(argv[i],(char *)list_get(i,arg_list),size);
 	}
 
+	/* Список всегда должен завершать NULL */
 	argv[i] = NULL;
 
 	return argv;
@@ -136,7 +137,12 @@ void exec_command(unsigned cmd_type)
 
 			}
 			else {
-				if(!bit_seted(cmd_type,INCL_BACKGR)) wait(&child_stat);
+				if(bit_seted(cmd_type,INCL_BACKGR)) {
+				#ifdef JOBS_H
+					add_bg_job((char *) list_get(0,arg_list), pid, getppid());
+				#endif 
+				}
+				else wait(&child_stat);
 			}
 		}
 	}

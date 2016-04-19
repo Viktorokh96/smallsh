@@ -1,5 +1,5 @@
-#ifndef DEFINES_H
-#define DEFINES_H	
+#ifndef SHELL_H
+#define SHELL_H	
 #include "defines.h"
 
 void end_of_work();

@@ -12,5 +12,7 @@ int init_general()
 #else
 	getcwd (curr_path,PATHSIZE);
 #endif
+	shell_pid = getpid();
+
 	return 0;
 }
