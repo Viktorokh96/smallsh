@@ -38,6 +38,11 @@ void init_shell(unsigned mode)
 		init_general();
 	}
 #endif
+#ifdef LIST_H
+	if (bit_seted(mode,LIST)) {
+		arg_list = -1;
+	}
+#endif
 }
 
 /* Подготавливаем аргументы */
@@ -140,7 +145,11 @@ void exec_command(unsigned cmd_type)
 /* Получаем команду от пользователя */
 inline unsigned get_command(char *cmd)
 {
+	/* Удаляем старый список */
+	if (arg_list != -1)	list_del(arg_list);
+
 	arg_list = init_list();
+	
 	/* Если имеем дело с устаревшим компилятором */
 #if defined USE_DEPRICATED
     gets(cmd);
@@ -161,14 +170,13 @@ int main(int argc, char *argv[])
 	char command[CMD_SIZE];
 	unsigned cmd_type;
 	
-	init_shell(SIGNAL | JOBS | GENERAL);
+	init_shell(SIGNAL | JOBS | GENERAL | LIST);
 	
 	for(;;) {
 		clear_cmd_buff(command);		 /* Принудительная очистка */
 		printf("%s:%s#|>",getlogin(),curr_path);
 		cmd_type = get_command(command); /* command более использоваться не должен */
 		exec_command(cmd_type);	
-		list_del(arg_list);
 	}
 	
 	return 0;

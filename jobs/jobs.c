@@ -1,6 +1,7 @@
 #include "jobs.h"
 #include <string.h>
 #include "handlers.h"
+#include "../parses/parse.h"
 
 static job job_sh; /* Структура для описания обработчика */
 
@@ -14,7 +15,7 @@ int (* is_shell_cmd(char *cmd)) (void *)
 {
 	list *tmp;
 	list_for_each(tmp,get_head(sh_jobs)) {
-		if (!strcmp(((job *)list_entry(tmp)) -> name, cmd)) 
+		if (!compare_str(((job *)list_entry(tmp)) -> name, cmd)) 
 			return ((job *)list_entry(tmp)) -> handler;
 	}
 	return NULL;

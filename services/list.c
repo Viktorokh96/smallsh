@@ -33,7 +33,7 @@ inline void *list_get (unsigned num,list_id lid)
 }
 
 /* Инициализирует список */
-inline list_id init_list()
+list_id init_list()
 {
 	list_id new_list;
 	search_free(bit_map,new_list);
@@ -46,11 +46,11 @@ inline list_id init_list()
 	return new_list;
 }
 
-inline void list_del (list_id lid)
+void list_del (list_id lid)
 {
 	if (lid < 0 || lid > MAXLISTS) return;
 
-	if (bit_seted(bit_map, lid)) {			/* Если очеред инициализирована */ 
+	if (bit_seted(bit_map, 1 << lid)) {			/* Если очеред инициализирована */ 
 		if(!list_empty(&list_heads[lid])) {
 			list *tmp1 , *tmp2 = NULL;
 			list_for_each(tmp1,get_head(lid)) { 
@@ -58,16 +58,16 @@ inline void list_del (list_id lid)
 				tmp2 = tmp1;
 			}
 			free(tmp2);						/* Удаление последнего элемента */
-			unset_bit(bit_map, 1 << lid);
 		}
+		unset_bit(bit_map, 1 << lid);
 	}
 }
 /* Добавить элемент в начало списка */
-inline list *list_add (void *cont, size_t size, list_id lid)
+list *list_add (void *cont, size_t size, list_id lid)
 {
 	if (lid < 0 || lid > MAXLISTS) return NULL;
 	
-	if (bit_seted(bit_map, lid)) {			/* Если очеред инициализирована */
+	if (bit_seted(bit_map, 1 << lid)) {			/* Если очеред инициализирована */
 		list *new_list;
 		/* Выделяем память под элемент списка и содержимое */
 		if(!(new_list = malloc(sizeof(list) + size))) return NULL;
@@ -82,11 +82,11 @@ inline list *list_add (void *cont, size_t size, list_id lid)
 }
 
 /* Добавить элемент в конец списка */
-inline list *list_add_tail(void *cont, size_t size, list_id lid)
+list *list_add_tail(void *cont, size_t size, list_id lid)
 {
 	if (lid < 0 || lid > MAXLISTS) return NULL;
 	
-	if (bit_seted(bit_map, lid)) {			/* Если очеред инициализирована */
+	if (bit_seted(bit_map, 1 << lid)) {			/* Если очеред инициализирована */
 		list *new_list, *q;
 		/* Выделяем память под элемент списка и содержимое */
 		if(!(new_list = malloc(sizeof(list) + size))) return NULL;

@@ -8,6 +8,7 @@
 #define SIGNAL		0x0001
 #define JOBS		0x0002
 #define GENERAL		0x0004
+#define LIST		0x0008
 #endif
 
 /* Флаги командного парсера */

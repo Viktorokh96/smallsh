@@ -27,7 +27,7 @@ unsigned parse_cmd(char *cmd, list_id arg_list)
 			select_word(q);
 			*q = 0;
 			/* Проверка на & */
-			if (!strcmp(p,"&")) {
+			if (!compare_str(p,"&")) {
 				if(*(q+1)) p = q+1;
 				else p = q; 
 				set_bit(mode,INCL_BACKGR);
@@ -60,3 +60,18 @@ char *make_exec_path(char **path, char *execf)
 	return q;
 }
 
+int compare_str(char *str1, char *str2)
+{
+	char *p = str1;
+	char *q = str2;
+
+	if ((p == NULL) || (q == NULL)) { 
+		fprintf(stderr, "Передача NULL строки в функцию compare_str! \
+			Фатальная ошибка!\n");
+		return 1;
+	}
+
+	for(;(*p) && (*q);p++,q++) if (*p != *q) return 1;
+
+	return 0;
+}

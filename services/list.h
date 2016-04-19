@@ -18,7 +18,7 @@ typedef unsigned int list_id;
 /* Поиск свободного списка */
 #define search_free(m,p) \
 	int i;	 			 \
-	for (p = i = 0; bit_seted(m,1 << i) && (i < MAXLISTS);	p = ++i);
+	for (p = i = 0; bit_seted(m,1 << i) && (i < MAXLISTS);	++i , p = i);
 
 /* Прогонка по всему списку */
 #define list_for_each(p,h) \
@@ -40,16 +40,16 @@ inline void *list_get (unsigned num,list_id lid);
 inline list *get_head(list_id lid);
 
 /* Инициализирует список */
-inline list_id init_list();
+list_id init_list();
 
 /* Удалить список */
-inline void list_del (list_id lid);
+void list_del (list_id lid);
 
 /* Добавить элемент в начало списка */
-inline list *list_add (void *cont, size_t size, list_id lid);
+list *list_add (void *cont, size_t size, list_id lid);
 
 /* Добавить элемент в конец списка */
-inline list *list_add_tail (void *cont, size_t size, list_id lid);
+list *list_add_tail (void *cont, size_t size, list_id lid);
 
 
 #endif
