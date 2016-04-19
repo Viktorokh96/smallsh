@@ -131,7 +131,7 @@ void exec_command(unsigned cmd_type)
 
 			}
 			else {
-				wait(&child_stat);
+				if(!bit_seted(cmd_type,INCL_BACKGR)) wait(&child_stat);
 			}
 		}
 	}
@@ -150,6 +150,12 @@ inline unsigned get_command(char *cmd)
     return parse_cmd(cmd,arg_list);
 }
 
+inline void clear_cmd_buff(char *cmd_buf)
+{
+	int i;
+	for(i = 0; i < CMD_SIZE; i++) cmd_buf[i] = 0; 
+}
+
 int main(int argc, char *argv[])
 {
 	char command[CMD_SIZE];
@@ -158,10 +164,10 @@ int main(int argc, char *argv[])
 	init_shell(SIGNAL | JOBS | GENERAL);
 	
 	for(;;) {
+		clear_cmd_buff(command);		 /* Принудительная очистка */
 		printf("%s:%s#|>",getlogin(),curr_path);
 		cmd_type = get_command(command); /* command более использоваться не должен */
 		exec_command(cmd_type);	
-		command[0] = '\0';
 		list_del(arg_list);
 	}
 	

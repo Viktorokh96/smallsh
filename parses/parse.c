@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 
-#define DIR_SEP		'/'
+#define DIR_SEP		"/"
 
 #define look_further(p)	while((*(p)) && (*(p)) != '\n' && (*(p)) == ' ') ((p)++)
 #define select_word(p)  while(((*(p)) != ' ') && ((*(p)) != '\n') && (*(p))) (p)++;	
@@ -26,6 +26,13 @@ unsigned parse_cmd(char *cmd, list_id arg_list)
 			/* Выделяем путь к исполняемому файлу */
 			select_word(q);
 			*q = 0;
+			/* Проверка на & */
+			if (!strcmp(p,"&")) {
+				if(*(q+1)) p = q+1;
+				else p = q; 
+				set_bit(mode,INCL_BACKGR);
+				continue;
+			} 
 			tmp = strdup(p);
 			list_add_tail(tmp,strlen(tmp)+1,arg_list);
 			bit_seted(mode,INCL_EXEC) ? set_bit(mode,INCL_ARGS):set_bit(mode,INCL_EXEC);
@@ -48,7 +55,7 @@ char *make_exec_path(char **path, char *execf)
 	select_path(q);
 	*q = '\0'; q++;
 	*path = strdup(p);		/* Теперь работает с независимой копией */
-	strncat(*path, "/", 1);
+	strncat(*path, DIR_SEP, 1);
 	strncat(*path, execf, strlen(execf));
 	return q;
 }
