@@ -10,7 +10,7 @@
 #include "./parses/parse.h"
 #include "./jobs/jobs.h"
 #include "general.h"
-#include "init.h"
+#include "shell.h"
 
 /* Определение функции обработчика */
 void SigHandler(int sig)

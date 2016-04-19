@@ -13,7 +13,7 @@ FLAGS = -Wall -c -g $(INCLUDE)
 LDFLAGS = $(LIBS)
 # Исходные файлы проекта
 GENERALSRC = general.c
-MAINSOURCE = init.c 
+MAINSOURCE = shell.c 
 PARSESRC = parse.c
 LISTSRC = list.c
 JOBSSRC = jobs.c
@@ -24,11 +24,13 @@ LISTOBJ = $(patsubst %.c,%.o,$(LISTSRC))
 JOBSOBJ = $(patsubst %.c,%.o,$(JOBSSRC))
 GENERALOBJ = $(patsubst %.c,%.o,$(GENERALSRC))
 
+ALLOBJ	= $(GENERALOBJ) $(JOBSOBJ) $(LISTOBJ) $(PARSEOBJ) $(MAINOBJ)
+
 EXE := smallsh
 
 all: $(EXE)
 
-$(EXE) : $(GENERALOBJ) $(JOBSOBJ) $(LISTOBJ) $(PARSEOBJ) $(MAINOBJ)
+$(EXE) : $(ALLOBJ)
 		$(CC) $^ $(LDFLAGS) -o $@
 
 $(MAINOBJ) : $(MAINSOURCE)
@@ -47,4 +49,4 @@ $(GENERALOBJ) : $(GENERALSRC)
 		$(CC) $(FLAGS) $^ $(CFLAGS) -o $@				
 
 clean : 
-		rm -f $(GENERALOBJ) $(JOBSOBJ) $(MAINOBJ) $(PARSEOBJ)  | rm $(EXE)
+		rm -f $(ALLOBJ) | rm $(EXE)

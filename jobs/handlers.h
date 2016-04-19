@@ -1,7 +1,7 @@
 #ifndef HANDLER_H
 #define HANDLER_H
 #include "../general.h"
-#include "../init.h"
+#include "../shell.h"
 #include <unistd.h>
 #include <stdlib.h>
 
