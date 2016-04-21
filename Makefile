@@ -6,7 +6,7 @@ INCLUDE = -I/usr/include
 LIBS = 
 
 # Направление поиска для make
-vpath %.c ./services ./parses ./jobs
+vpath %.c ./services ./parses ./jobs ./signal
 # Установка флагов для компиляции объектных файлов
 FLAGS = -Wall -c -g $(INCLUDE)
 # Установка флагов для линковщика
@@ -17,14 +17,16 @@ MAINSOURCE = shell.c
 PARSESRC = parse.c
 LISTSRC = list.c
 JOBSSRC = jobs.c
+SIGNALSRC = signal.c
 # Объектные файлы 
 MAINOBJ = $(patsubst %.c,%.o,$(MAINSOURCE))
 PARSEOBJ = $(patsubst %.c,%.o,$(PARSESRC))
 LISTOBJ = $(patsubst %.c,%.o,$(LISTSRC))
 JOBSOBJ = $(patsubst %.c,%.o,$(JOBSSRC))
 GENERALOBJ = $(patsubst %.c,%.o,$(GENERALSRC))
+SIGNALOBJ = $(patsubst %.c,%.o,$(SIGNALSRC))
 
-ALLOBJ	= $(GENERALOBJ) $(JOBSOBJ) $(LISTOBJ) $(PARSEOBJ) $(MAINOBJ)
+ALLOBJ	= $(SIGNALOBJ) $(GENERALOBJ) $(JOBSOBJ) $(LISTOBJ) $(PARSEOBJ) $(MAINOBJ)
 
 EXE := smallsh
 
@@ -48,5 +50,8 @@ $(JOBSOBJ) : $(JOBSSRC)
 $(GENERALOBJ) : $(GENERALSRC)
 		$(CC) $(FLAGS) $^ $(CFLAGS) -o $@				
 
+$(SIGNALOBJ) : $(SIGNALSRC)
+		$(CC) $(FLAGS) $^ $(CFLAGS) -o $@				
+		
 clean : 
 		rm -f $(ALLOBJ) | rm $(EXE)

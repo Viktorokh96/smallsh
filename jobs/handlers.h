@@ -8,7 +8,6 @@
 int exit_handl(void *prm)
 {
 	end_of_work();
-	_exit(1);
 	return 0;
 }
 

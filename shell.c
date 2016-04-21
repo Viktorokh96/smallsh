@@ -3,30 +3,20 @@
 #include <unistd.h>
 #include <wait.h>
 #include <string.h>
-#include <signal.h>
 #include "defines.h"
 #include "services/bits.h"
 #include "services/list.h"
 #include "./parses/parse.h"
 #include "./jobs/jobs.h"
+#include "./signal/signal.h"
 #include "general.h"
 #include "shell.h"
-
-/* Определение функции обработчика */
-void SigHandler(int sig)
-{
-	if (getpid() != 0) {
-		printf("Shut up honey!\n");
-		fflush(stdout);
-	}
-	return;
-}
 
 /* Инициализация служебных систем оболочки */
 void init_shell(unsigned mode)
 {
 	if (bit_seted(mode,SIGNAL)) {
-		signal(SIGINT,&SigHandler);
+		init_signals();
 	}
 #ifdef JOBS_H
 	if (bit_seted(mode,JOBS)) {
@@ -64,7 +54,7 @@ char **prepare_args()
 	return argv;
 }
 
-inline int try_exec_with_args(char *path) 
+int try_exec(char *path) 
 {
 	int state = 0;
 	char *tmp;
@@ -85,23 +75,6 @@ inline int try_exec_with_args(char *path)
 	return state;
 }
 
-inline int try_exec(char *path) 
-{
-	int state = 0;
-	char *tmp;
-	char *exec_path = strdup(path);
-	
-	while((tmp = make_exec_path(&exec_path,
-		(char *) list_get(0,arg_list))) != NULL) {
-		if (exec_path == NULL) state = 1;
-		/*printf("%s\n",tmp );*/				/* DEBUG */
-		if (!execl(exec_path,"",NULL)) return 0;
-		else state = 1;
-		exec_path = tmp;
-	} 
-	return state;
-}
-
 /* Запуск команды */
 void exec_command(unsigned cmd_type)
 {
@@ -113,26 +86,17 @@ void exec_command(unsigned cmd_type)
 #ifdef JOBS_H
 		/* Если такая команда встроена в оболочку */
 		if ((sh_handler = is_shell_cmd((char *) list_get(0,arg_list))) != NULL) {
-			if(bit_seted(cmd_type,INCL_ARGS))
 				sh_handler((void *) prepare_args());	
-			else sh_handler(NULL);
 		} else 
 #endif
 		{
 			pid = fork();
 			if (pid == 0) {
-				if(!bit_seted(cmd_type,INCL_ARGS)) {					
-					if(try_exec(getenv("PATH")) != 0) 
-					if(try_exec(getenv("PWD")) != 0) {
-						printf("Исполняемый файл не найден.\n");
-						_exit(1);
-					}
-				} else {
-					if(try_exec_with_args(getenv("PATH")) != 0) 
-					if(try_exec_with_args(getenv("PWD")) != 0) {
-						printf("Исполняемый файл не найден.\n");
-						_exit(1);
-					}
+				if(try_exec(getenv("PATH")) != 0) 
+				if(try_exec(getenv("PWD")) != 0) {
+					printf("Исполняемый файл не найден.\n");
+					_exit(1);
+					
 				}
 
 			}
@@ -194,4 +158,6 @@ void end_of_work()
 #ifdef JOBS_H
 	del_jobs();
 #endif
+	_exit(1);
+
 }
