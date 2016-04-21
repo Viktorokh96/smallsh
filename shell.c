@@ -13,8 +13,10 @@
 #include "shell.h"
 
 /* Инициализация служебных систем оболочки */
-void init_shell(unsigned mode)
+void init_shell(unsigned mode, char *argv[])
 {
+	strcpy(shell_name,argv[0]);
+
 	if (bit_seted(mode,SIGNAL)) {
 		init_signals();
 	}
@@ -140,7 +142,7 @@ int main(int argc, char *argv[])
 	char command[CMD_SIZE];
 	unsigned cmd_type;
 	
-	init_shell(SIGNAL | JOBS | GENERAL | LIST);
+	init_shell(SIGNAL | JOBS | GENERAL | LIST , argv);
 	
 	for(;;) {
 		clear_cmd_buff(command);		 /* Принудительная очистка */

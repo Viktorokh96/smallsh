@@ -42,5 +42,12 @@ int cd_handl(void *prm)
 	return 0;
 }
 
+int version_handl(void *prm)
+{
+	printf("Interpreter %s, version 0.001.\n",shell_name);
+
+	return 0;
+}
+
 
 #endif

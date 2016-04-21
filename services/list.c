@@ -32,6 +32,22 @@ inline void *list_get (unsigned num,list_id lid)
 	return NULL;
 }
 
+/* Извлечь элемент из начала списка, с последующим удалением элемента */
+inline	void *list_pop (list_id lid)
+{
+	if (lid < 0 || lid > MAXLISTS) return NULL;
+	if (bit_seted(bit_map, 1 << lid)) {			/* Если очеред инициализирована */
+		if(!list_empty(&list_heads[lid])) {
+			list *lp = get_head(lid)->mnext;
+			void *contain = malloc(sizeof(char)*lp->msize);
+			memcpy(lp+1,contain,lp->msize);
+			get_head(lid)->mnext = lp->mnext;
+			free(lp);
+			return contain;
+		} else	return NULL;
+	} else return NULL;
+}
+
 /* Инициализирует список */
 list_id init_list()
 {

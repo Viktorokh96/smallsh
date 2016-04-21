@@ -39,6 +39,9 @@ inline void *list_get (unsigned num,list_id lid);
 /* Получить адрес головы списка */
 inline list *get_head(list_id lid);
 
+/* Извлечь элемент из начала списка, с последующим удалением элемента */
+inline	void *list_pop (list_id lid);
+
 /* Инициализирует список */
 list_id init_list();
 
