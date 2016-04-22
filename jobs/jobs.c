@@ -108,13 +108,14 @@ int try_exec(char *path, sing_exec *ex)
 /* Исполнение команды */
 int exec (sing_exec *ex)
 {
+	int stat,spec;
 	pid_t pid;
 	int child_stat;
 	
 	pid = fork();
 	if (pid == 0) {
-		if(try_exec(getenv("PATH"),ex) != 0) 
-		if(try_exec(getenv("PWD"),ex) != 0) {
+		if((stat = try_exec(getenv("PATH"),ex)) != 0) 
+		if((stat = try_exec(getenv("PWD"),ex)) != 0) {
 			printf("Исполняемый файл не найден.\n");
 			_exit(1);
 			
@@ -124,20 +125,36 @@ int exec (sing_exec *ex)
 		wait(&child_stat);
 	}
 
-	if(ex->next != NULL) ex->next->exec_func(ex->next);
+	spec = get_spec();
+	if(spec == NO_SPEC) {
+		if(ex->next != NULL) ex->next->exec_func(ex->next);
+	}
+	else 
+		if (((stat == 0) && (spec == SPEC_AND)) ||
+			((stat != 0) && (spec == SPEC_OR)))
+			if(ex->next != NULL) ex->next->exec_func(ex->next);
 
 	return 0;
 }
 
 int exec_shells (sing_exec *ex)
 {
+	int stat,spec;
+
 	int (*sh_handler)(void *prm);
 
 	sh_handler = is_shell_cmd(ex->name);
 
-	sh_handler(ex->argv);
+	stat = sh_handler(ex->argv);
 
-	if(ex->next != NULL) ex->next->exec_func(ex->next);
+	spec = get_spec();
+	if(spec == NO_SPEC) {
+		if(ex->next != NULL) ex->next->exec_func(ex->next);
+	}
+	else 
+		if (((stat == 0) && (spec == SPEC_AND)) ||
+			((stat != 0) && (spec == SPEC_OR)))
+			if(ex->next != NULL) ex->next->exec_func(ex->next);
 }
 
 
