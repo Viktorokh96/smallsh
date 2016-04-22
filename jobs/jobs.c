@@ -24,6 +24,20 @@ inline int no_spec()
 	return (sp_queue.prod == sp_queue.cons);
 }
 
+void free_exec(sing_exec *ex)
+{
+	int i;
+	if (ex != NULL) {
+		if(ex->name != NULL) free(ex->name);
+		if(ex->argv != NULL) {
+			for (i = 0; ex->argv[i] != NULL; free(ex->argv[i]), i++); 
+			free(ex->argv);		
+		}
+		if(ex->files != NULL) free(ex->files);
+		if(ex->next != NULL) free_exec(ex->next);
+	}
+}
+
 /* Добавление специального исмвола в очередь */
 void add_spec(int val)
 {
@@ -94,10 +108,23 @@ int try_exec(char *path, sing_exec *ex)
 	return state;
 }
 
+inline void exec_next(sing_exec *ex, int stat)
+{
+	int spec;
+	if (ex->next != NULL) {
+		spec = get_spec();
+		if(spec == NO_SPEC) { ex->next->exec_func(ex->next); return; }
+		if (((stat == 0) && (spec == SPEC_AND)) ||
+			((stat != 0) && (spec == SPEC_OR)))
+			ex->next->exec_func(ex->next);
+			else free_exec(ex->next);	/* Освобождаем ненужные элементы */ 
+	}
+}
+
 /* Исполнение команды */
 int exec (sing_exec *ex)
 {
-	int stat,spec;
+	int stat;
 	pid_t pid;
 	int child_stat;
 	
@@ -114,21 +141,14 @@ int exec (sing_exec *ex)
 		wait(&child_stat);
 	}
 
-	spec = get_spec();
-	if(spec == NO_SPEC) {
-		if(ex->next != NULL) ex->next->exec_func(ex->next);
-	}
-	else 
-		if (((stat == 0) && (spec == SPEC_AND)) ||
-			((stat != 0) && (spec == SPEC_OR)))
-			if(ex->next != NULL) ex->next->exec_func(ex->next);
+	exec_next(ex,stat);
 
 	return 0;
 }
 
 int exec_shells (sing_exec *ex)
 {
-	int stat,spec;
+	int stat;
 
 	int (*sh_handler)(void *prm);
 
@@ -136,16 +156,9 @@ int exec_shells (sing_exec *ex)
 
 	stat = sh_handler(ex->argv);
 
-	spec = get_spec();
-	if(spec == NO_SPEC) {
-		if(ex->next != NULL) ex->next->exec_func(ex->next);
-	}
-	else 
-		if (((stat == 0) && (spec == SPEC_AND)) ||
-			((stat != 0) && (spec == SPEC_OR)))
-			if(ex->next != NULL) ex->next->exec_func(ex->next);
+	exec_next(ex,stat);
 
-	return stat;
+	return 0;
 }
 
 inline int find_spec(int i)
