@@ -53,7 +53,7 @@ char **prepare_args(list *begin, unsigned mode)
 				 compare_str((char *) list_entry(tmp),"||");
 				tmp = tmp->mnext) size++;	/* Доходим до специального символа */
 			argv = malloc(size*sizeof(char *));
-			for (i = 0; i < size; i++) {
+			for (i = 0; i < size-1; i++) {
 				strsize = strlen((char *)list_get(i,arg_list))+1;
 				argv[i] = malloc(strsize*sizeof(char));
 				memcpy(argv[i],(char *)list_get(i,arg_list),strsize);
@@ -68,7 +68,7 @@ char **prepare_args(list *begin, unsigned mode)
 			size = 1;
 			for(tmp = begin; (tmp = tmp->mnext) != get_head(arg_list);) size++;	/* Доходим до конца списка */
 			argv = malloc(size*sizeof(char *));
-			for (i = 0; i < size; i++) {
+			for (i = 0; i < size-1; i++) {
 				strsize = strlen((char *)list_get(i,arg_list))+1;
 				argv[i] = malloc(strsize*sizeof(char));
 				memcpy(argv[i],(char *)list_get(i,arg_list),strsize);
@@ -137,7 +137,7 @@ int exec_shells (sing_exec *ex)
 
 	sh_handler(ex->argv);
 
-	ex->next->exec_func(ex->next);
+	if(ex->next != NULL) ex->next->exec_func(ex->next);
 }
 
 
@@ -158,7 +158,7 @@ sing_exec *create_exec_queue()
 	}
 
 	ex = (sing_exec *) malloc(sizeof(sing_exec));
-	strcpy(ex->name,(char *) list_get(0,arg_list));
+	ex->name = strdup((char *) list_get(0,arg_list));
 	if(no_spec())
 		ex -> argv = prepare_args(get_head(arg_list), TO_END);
 	else
