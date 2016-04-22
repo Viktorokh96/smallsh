@@ -48,7 +48,7 @@
 	int (* is_shell_cmd(char *cmd)) (void *);
 
 	/* Подготовка аргументов для команды */
-	char **prepare_args(list *begin, unsigned mode);
+	char **prepare_args(int num, unsigned mode);
 
 	/* Содание очереди на исполнение */
 	sing_exec *create_exec_queue();

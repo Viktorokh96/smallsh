@@ -32,6 +32,11 @@ inline void *list_get (unsigned num,list_id lid)
 	return NULL;
 }
 
+inline list *list_get_header (unsigned num,list_id lid)
+{
+	return (list *) list_get(num,lid)-1;
+}
+
 /* Извлечь элемент из начала списка, с последующим удалением элемента */
 inline	void *list_pop (list_id lid)
 {
