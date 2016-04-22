@@ -49,5 +49,21 @@ int version_handl(void *prm)
 	return 0;
 }
 
+int meow_handl(void *prm)
+{
+printf("../\\„„./\\.\n");
+printf(".(='•'= ) .\n");
+printf(".(\") „. (\").\n");
+printf(". \\,\\„„/,/\n");
+printf(". │„„. „│\n");
+printf(". /„/„ \\„\\\n");
+printf(".(„)''l l''(„)\n");
+printf(". .. ((...\n");
+printf(". . . ))..\n");
+printf(". . .((..\n");
+
+return 0;
+}
+
 
 #endif
