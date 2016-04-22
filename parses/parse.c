@@ -6,42 +6,42 @@
 
 #define DIR_SEP		"/"
 
-#define look_further(p)	while((*(p)) && (*(p)) != '\n' && (*(p)) == ' ') ((p)++)
-#define select_word(p)  while(((*(p)) != ' ') && ((*(p)) != '\n') && (*(p))) (p)++;	
+#define look_further(p)	while((*(p)) && (*(p)) != ';' && (*(p)) != '\n' && (*(p)) == ' ') ((p)++)
+#define select_word(p)  while(((*(p)) != ' ') && (*(p)) != ';' && ((*(p)) != '\n') && (*(p))) (p)++;	
 #define select_path(p)  while(((*(p)) != '\0') && ((*(p)) != ':') && ((*(p)) != '\n') && (*(p))) (p)++;	
 
 /* Разделяем команду на части, выделяя исполняемую часть и аргументы */
-unsigned parse_cmd(char *cmd, list_id arg_list)
+char *parse_cmd(char *cmd)
 {
-	unsigned mode;
 	char *tmp;
 	char *p,*q;
 
-	mode = 0;
+	/* Удаляем старый список */
+	if (arg_list != -1)	list_del(arg_list);
+
+	arg_list = init_list();
 
 	for (p = q = cmd; (*p != '\n') && (*p != '\0');) {
 		look_further(p);	/* Пропускаем пробелы если есть */
 		if(*p) {
+			if (*p == ';') return p+1;
 			q = p;
 			/* Выделяем путь к исполняемому файлу */
 			select_word(q);
+			if (*q == ';') {
+				*q = 0;
+				tmp = strdup(p);
+				list_add_tail(tmp,strlen(tmp)+1,arg_list);	
+				return q + 1;
+			}
 			*q = 0;
-			/* Проверка на & */
-			if (!compare_str(p,"&")) {
-				if(*(q+1)) p = q+1;
-				else p = q; 
-				set_bit(mode,INCL_BACKGR);
-				continue;
-			} 
 			tmp = strdup(p);
 			list_add_tail(tmp,strlen(tmp)+1,arg_list);
-			bit_seted(mode,INCL_EXEC) ? set_bit(mode,INCL_ARGS):set_bit(mode,INCL_EXEC);
 			if(*(q+1)) p = q+1;
 			else p = q;
 		} 
 	}	
-
-	return mode;
+	return NULL;
 }
 
 /* Функция, разбивающая строку на пути поиска исполняемых файлов */

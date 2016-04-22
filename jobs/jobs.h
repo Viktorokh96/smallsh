@@ -15,6 +15,16 @@
 		pid_t ppid;
 	} task_sh;
 
+	typedef struct single_execute {	/* Структура исполняемой единицы */
+		char *name;
+		char **argv;				/* Аргументы исполняемой единицы */
+		char **files;				/* Файлы в которые или из которых идёт в\в данных */
+		struct
+			single_execute *next;	/* Следующая исполяемая единица в цепочке */		
+		int (*exec_func)(struct 
+			 single_execute *self);/* Функция исполнения */
+	} sing_exec;
+
 	job job_sh; 		/* Структура для описания обработчика встроенной функции */
 	task_sh tsk_sh;	 	/* Структура для описания процесса */
 
@@ -28,7 +38,20 @@
 	
 	void del_jobs();
 
+	/* Добавление специального исмвола в очередь */
+	void add_spec(int val);
+
+	/* Взятие специального символа из очереди */
+	int  get_spec();
+
+	/* Определение встроенной функции */
 	int (* is_shell_cmd(char *cmd)) (void *);
+
+	/* Подготовка аргументов для команды */
+	char **prepare_args(list *begin, unsigned mode);
+
+	/* Содание очереди на исполнение */
+	sing_exec *create_exec_queue();
 
 	/* Добавление обработчика встроенной функции оболочки */
 	#define add_job(n,h) \

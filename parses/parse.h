@@ -8,7 +8,7 @@
 #include "../general.h"
 
 /* Разделяем команду на части, выделяя исполняемую часть и аргументы */
-unsigned parse_cmd(char *cmd, list_id arg_list);
+char *parse_cmd(char *cmd);
 
 /* Функция, разбивающая строку на пути поиска исполняемых файлов */
 char *make_exec_path(char **path, char *execf);
