@@ -22,9 +22,11 @@ int cd_handl(void *prm)
 	char **argv = (char **) prm;
 
 	if (argv != NULL) {
-		if(chdir(argv[1]) != 0) { 
-			printf("Такого каталога нет!\n");
-			return 1;
+		if (argv[1] != NULL) {
+			if(chdir(argv[1]) != 0) { 
+				printf("Такого каталога нет!\n");
+				return 1;
+			}
 		}
 #ifdef	__USE_GNU
 		curr_path = get_current_dir_name (void);

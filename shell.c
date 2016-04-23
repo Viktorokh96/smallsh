@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 #include "defines.h"
 #include "services/bits.h"
 #include "services/list.h"
@@ -41,9 +42,8 @@ void exec_command()
 {
 	sing_exec *first;
 
-	first = create_exec_queue();				/* Создание очереди на исполнение */
-
-	first -> exec_func(first);
+	if((first = create_exec_queue()) != NULL)				/* Создание очереди на исполнение */
+		first -> exec_func(first);							/* и непосредственное исполнение */
 }
 
 /* Получаем команду от пользователя */

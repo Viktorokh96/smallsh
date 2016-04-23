@@ -47,7 +47,7 @@ void add_spec(int val)
 }
 
 /* Взятие специального символа из очереди */
-int  get_spec()
+int get_spec()
 {
 	if(sp_queue.prod == sp_queue.cons) return NO_SPEC;
 	int tmp = sp_queue.queue[sp_queue.cons];
@@ -146,6 +146,7 @@ int exec (sing_exec *ex)
 	return 0;
 }
 
+/* Запуск встроенных команд */
 int exec_shells (sing_exec *ex)
 {
 	int stat;
