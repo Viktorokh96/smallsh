@@ -28,12 +28,15 @@ SIGNALOBJ = $(patsubst %.c,%.o,$(SIGNALSRC))
 
 ALLOBJ	= $(SIGNALOBJ) $(GENERALOBJ) $(JOBSOBJ) $(LISTOBJ) $(PARSEOBJ) $(MAINOBJ)
 
+HOMEPATH = $(HOME)/bin/
+
 EXE := smallsh
 
 all: $(EXE)
 
 $(EXE) : $(ALLOBJ)
 		$(CC) $^ $(LDFLAGS) -o $@
+		cp $@ $(HOMEPATH)
 
 $(MAINOBJ) : $(MAINSOURCE)
 		$(CC) $(FLAGS) $^ $(CFLAGS) -o $@
