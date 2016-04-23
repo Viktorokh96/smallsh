@@ -85,10 +85,7 @@ int main(int argc, char *argv[])
 
 void end_of_work()
 {
-	list_del(arg_list);
-#ifdef JOBS_H
+	del_general();
 	del_jobs();
-#endif
 	_exit(1);
-
 }

@@ -71,8 +71,8 @@ int compare_str(char *str1, char *str2)
 		return 1;
 	}
 
-	if(*p == '\0' || *q == '\0') return 1;
 	for(;(*p) && (*q);p++,q++) if (*p != *q) return 1;
+	if((*p == '\0') ^ (*q == '\0')) return 1;
 
 	return 0;
 }

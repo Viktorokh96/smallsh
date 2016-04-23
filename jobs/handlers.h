@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include "../shell.h"
+#include "../parses/parse.h"
 
 int exit_handl(void *prm)
 {
@@ -21,11 +22,20 @@ int cd_handl(void *prm)
 {
 	char **argv = (char **) prm;
 
+	char *past = NULL;
+
 	if (argv != NULL) {
 		if (argv[1] != NULL) {
-			if(chdir(argv[1]) != 0) { 
-				printf("Такого каталога нет!\n");
-				return 1;
+			if (!compare_str(argv[1],"back")) {
+				past = (char *) list_pop(path_list);
+				if(!list_empty(get_head(path_list))) chdir(past);
+			} 
+			else { 
+				list_add(curr_path,strlen(curr_path)+1,path_list);
+				if(chdir(argv[1]) != 0) { 
+					printf("Такого каталога нет!\n");
+					return 1;
+				}
 			}
 		}
 #ifdef	__USE_GNU

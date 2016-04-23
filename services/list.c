@@ -45,7 +45,7 @@ inline	void *list_pop (list_id lid)
 		if(!list_empty(&list_heads[lid])) {
 			list *lp = get_head(lid)->mnext;
 			void *contain = malloc(sizeof(char)*lp->msize);
-			memcpy(lp+1,contain,lp->msize);
+			memcpy(contain,lp+1,lp->msize);
 			get_head(lid)->mnext = lp->mnext;
 			free(lp);
 			return contain;

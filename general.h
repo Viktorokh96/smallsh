@@ -6,8 +6,11 @@
 
 	#define PATHSIZE	256
 
-	/* Текущая директроия */
+	/* Текущая директория */
 	char curr_path[PATHSIZE];
+
+	/* Предыдущая директория */
+	list_id path_list;
 
 	/* Список аргументов в команде */ 
 	list_id arg_list;
@@ -21,4 +24,5 @@
 	/* Инициализация глобальных структур данных */
 	int init_general();
 
+	void del_general();
 #endif
