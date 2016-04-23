@@ -132,7 +132,7 @@ int exec (sing_exec *ex)
 	if (pid == 0) {
 		if((stat = try_exec(getenv("PATH"),ex)) != 0) 
 		if((stat = try_exec(getenv("PWD"),ex)) != 0) {
-			printf("Исполняемый файл не найден.\n");
+			printf("%s: %s <- исполняемый файл не найден.\n",shell_name,ex->name);
 			_exit(1);
 			
 		}

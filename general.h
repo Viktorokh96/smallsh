@@ -23,7 +23,7 @@
 	pid_t shell_pid;
 
 	/* Название оболочки */
-	char shell_name[STR_SIZE];
+	char *shell_name;
 
 	/* Инициализация глобальных структур данных */
 	int init_general();

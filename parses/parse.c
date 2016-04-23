@@ -3,10 +3,6 @@
 #include <string.h>
 
 #include <stdio.h>
-
-#define DIR_SEP		"/"
-#define CH_DIR_SEP	'/'
-
 #define look_further(p)	while((*(p)) && (*(p)) != ';' && (*(p)) != '\n' && (*(p)) == ' ') ((p)++)
 #define select_word(p)  while(((*(p)) != ' ') && (*(p)) != ';' && ((*(p)) != '\n') && (*(p))) (p)++;	
 #define select_path(p)  while(((*(p)) != '\0') && ((*(p)) != ':') && ((*(p)) != '\n') && (*(p))) (p)++;	

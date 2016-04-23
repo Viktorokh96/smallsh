@@ -27,3 +27,8 @@
 /* Флаги функции подготовки аргументов */
 #define TO_SPEC		0x0001		/* До специального символа */
 #define TO_END		0x0002
+
+#define ESCAPING	'\\'
+
+#define DIR_SEP		"/"
+#define CH_DIR_SEP	'/'

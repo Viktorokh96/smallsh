@@ -15,7 +15,9 @@
 /* Инициализация служебных систем оболочки */
 void init_shell(unsigned mode, char *argv[])
 {
-	strcpy(shell_name,argv[0]);
+	shell_name = strdup(argv[0]);
+	shell_name += strlen(shell_name)-1;
+	for(;*(shell_name-1) != CH_DIR_SEP; shell_name--);
 
 	if (bit_seted(mode,SIGNAL)) {
 		init_signals();
@@ -43,12 +45,15 @@ void exec_command()
 /* Получаем команду от пользователя */
 inline char *get_command(char *cmd)
 {
-	/* Если имеем дело с устаревшим компилятором */
-#if defined USE_DEPRICATED
-    gets(cmd);
-#else
-    fgets(cmd,CMD_SIZE,stdin);
-#endif
+	char *q = cmd;
+get:q = fgets(q,CMD_SIZE,stdin);
+    q += strlen(q)-1;
+    for(;((q > cmd) && (*q != ESCAPING)); q--);
+    if (*q == ESCAPING) {
+    	printf("->");	
+    	goto get; 											/* Хотите - ругайтесь, но выглядит */
+    }														/* это достаточно элегантно. ИМХО */
+
     return cmd;
 }
 
