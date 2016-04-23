@@ -20,21 +20,15 @@ void init_shell(unsigned mode, char *argv[])
 	if (bit_seted(mode,SIGNAL)) {
 		init_signals();
 	}
-#ifdef JOBS_H
 	if (bit_seted(mode,JOBS)) {
 		init_jobs();
 	}
-#endif
-#ifdef GENERAL_H
 	if (bit_seted(mode,GENERAL)) {
 		init_general();
 	}
-#endif
-#ifdef LIST_H
 	if (bit_seted(mode,LIST)) {
 		arg_list = -1;
 	}
-#endif
 }
 
 /* Запуск команды */
@@ -73,7 +67,7 @@ int main(int argc, char *argv[])
 	
 	for(;;) {
 		clear_cmd_buff(command);					 	/* Принудительная очистка */
-		printf("%s:%s#|>",getlogin(),curr_path);
+		printf("%s:%s#|>",getlogin(),short_path(curr_path));
 		cmd = get_command(command);			 			/* Выполнение команды */
 		while((cmd = parse_cmd(cmd)) != NULL)
 			exec_command();

@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #define DIR_SEP		"/"
+#define CH_DIR_SEP	'/'
 
 #define look_further(p)	while((*(p)) && (*(p)) != ';' && (*(p)) != '\n' && (*(p)) == ' ') ((p)++)
 #define select_word(p)  while(((*(p)) != ' ') && (*(p)) != ';' && ((*(p)) != '\n') && (*(p))) (p)++;	
@@ -75,4 +76,16 @@ int compare_str(char *str1, char *str2)
 	if((*p == '\0') ^ (*q == '\0')) return 1;
 
 	return 0;
+}
+
+char *short_path(char *path)
+{
+	char *buf = strdup(path);
+	char *p = buf, *q = home_path;
+	for (;(*p == *q) && (*q); p++, q++);
+	if (!(*q)) { 
+		*(--p) = '~';
+		return p;
+	}
+	else return path;
 }
