@@ -45,7 +45,8 @@ void exec_command()
 }
 
 /* Получаем команду от пользователя */
-inline char *get_command(char *cmd)
+static inline 
+char *get_command(char *cmd)
 {
 	char *q = cmd;
 get:q = fgets(q,CMD_SIZE,stdin);
@@ -59,7 +60,8 @@ get:q = fgets(q,CMD_SIZE,stdin);
     return cmd;
 }
 
-inline void clear_cmd_buff(char *cmd_buf)
+static inline 
+void clear_cmd_buff(char *cmd_buf)
 {
 	int i;
 	for(i = 0; i < CMD_SIZE; i++) cmd_buf[i] = 0; 
@@ -74,7 +76,7 @@ int main(int argc, char *argv[])
 	
 	for(;;) {
 		clear_cmd_buff(command);					 	/* Принудительная очистка */
-		printf("%s:%s#|>",getlogin(),short_path(curr_path));
+		printf("%s:%s#|>",user_name,short_path(curr_path));
 		cmd = get_command(command);			 			/* Выполнение команды */
 		while((cmd = parse_cmd(cmd)) != NULL)
 			exec_command();

@@ -3,6 +3,7 @@
 	
 	#include "../services/list.h"
 	#include <unistd.h>
+	#include <sys/types.h> 	/* Спасибо stackoverflow ( для std=c99 ) */
 
 	typedef struct job_st {
 		char *name;					/* Имя команды */

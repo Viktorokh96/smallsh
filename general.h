@@ -4,14 +4,19 @@
 	#include <stdlib.h>
 	#include "./services/list.h"
 	#include "./defines.h"
+	#include <sys/types.h>
+	#include <pwd.h> 	
 
 	#define PATHSIZE	256
 
 	/* Текущая директория */
-	char curr_path[PATHSIZE];
+	char *curr_path;
 
 	/* Путь домашней дериктории */
 	char *home_path;
+
+	/* Имя пользователя */
+	char *user_name;
 
 	/* Предыдущая директория */
 	list_id path_list;

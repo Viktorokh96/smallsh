@@ -8,7 +8,7 @@ LIBS =
 # Направление поиска для make
 vpath %.c ./services ./parses ./jobs ./signal
 # Установка флагов для компиляции объектных файлов
-FLAGS = -Wall -c -g $(INCLUDE)
+FLAGS = -Wall -c -g -std=gnu99 $(INCLUDE)
 # Установка флагов для линковщика
 LDFLAGS = $(LIBS)
 # Исходные файлы проекта

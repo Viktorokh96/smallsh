@@ -28,22 +28,22 @@ typedef unsigned int list_id;
 #define list_empty(h) ((list *)(h)->mnext == (h))
 
 /* Взятие содержимого списка */
-inline void *list_entry (list *lp); /* Возвращает указатель на содержимое */
+ void *list_entry (list *lp); /* Возвращает указатель на содержимое */
 
 /* Подсчёт элементов списка */
-inline unsigned list_count (list_id lid);
+ unsigned list_count (list_id lid);
 
 /* Получить адрес элемента списка */
-inline void *list_get (unsigned num,list_id lid);
+ void *list_get (unsigned num,list_id lid);
 
 /* Получить адрес головы списка */
-inline list *get_head(list_id lid);
+ list *get_head(list_id lid);
 
 /* Получить адрес заголовка */
-inline list *list_get_header (unsigned num,list_id lid);
+ list *list_get_header (unsigned num,list_id lid);
 
 /* Извлечь элемент из начала списка, с последующим удалением элемента */
-inline	void *list_pop (list_id lid);
+	void *list_pop (list_id lid);
 
 /* Инициализирует список */
 list_id init_list();

@@ -6,7 +6,8 @@
 
 #define is_spec(l,s)	(!compare_str((char *) list_entry((l)), s))
 
-inline int queue_next (int p)
+static inline 
+int queue_next (int p)
 {
 	if (p < SPEC_LENG-1) return p+1;
 	else return 0;
@@ -19,7 +20,8 @@ struct special_queue {	/* Очередь специальных символов
 	int (*next)(int p);	/* Метод, возвращающий следущий элемент */
 } sp_queue;
 
-inline int no_spec()
+static inline
+int no_spec()
 {
 	return (sp_queue.prod == sp_queue.cons);
 }
@@ -108,7 +110,8 @@ int try_exec(char *path, sing_exec *ex)
 	return state;
 }
 
-inline void exec_next(sing_exec *ex, int stat)
+static inline 
+void exec_next(sing_exec *ex, int stat)
 {
 	int spec;
 	if (ex->next != NULL) {
@@ -162,7 +165,8 @@ int exec_shells (sing_exec *ex)
 	return 0;
 }
 
-inline int find_spec(int i)
+static inline 
+int find_spec(int i)
 {
 	int p = i;
 	list *tmp;
