@@ -3,6 +3,7 @@
 #include "handlers.h"
 #include "../parses/parse.h"
 #include <wait.h>
+#include <errno.h>
 
 #define is_same(l,s)	(!compare_str((char *) list_entry((l)), s))
 
@@ -146,6 +147,18 @@ void exec_next(sing_exec *ex, int stat)
 	}
 }
 
+void switch_io(sing_exec *ex)
+{
+	if (ex->file != NULL) {
+		if(bit_seted(ex->mode,IO_OUT))
+			if((freopen(ex->file,"w+",stdout)) == NULL)
+				perror("open file error!:");
+		if(bit_seted(ex->mode,IO_IN))
+			if((freopen(ex->file,"r",stdin)) == NULL)
+				perror("open file error!:");
+	}
+}
+
 /* Исполнение команды */
 int exec (sing_exec *ex)
 {
@@ -155,12 +168,14 @@ int exec (sing_exec *ex)
 	int (*sh_handler)(void *prm);
 
 	sh_handler = is_shell_cmd(ex->name);			/* Проверяем, встроена ли функция в оболочку */
+
 		
 	if (sh_handler != NULL) {
 		stat = sh_handler(ex->argv);
 	} else {
 		pid = fork();
 		if (pid == 0) { 
+			switch_io(ex);
 			if((stat = try_exec(getenv("PATH"),ex)) != 0) 
 			if((stat = try_exec(getenv("PWD"),ex)) != 0) {
 				printf("%s: %s <- исполняемый файл не найден.\n",shell_name,ex->name);
