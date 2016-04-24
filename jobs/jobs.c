@@ -94,14 +94,14 @@ void *prepare_args(int num, sing_exec *ex, unsigned mode)
 			for (i = num; i < num+size-1; i++) {
 				if(!compare_str((char *)list_get(i,arg_list),"<") &&
 			 		list_get(i+1,arg_list) != NULL) {
-					filename = list_get(i+1,arg_list);
+					filename = strdup((char *)list_get(i+1,arg_list));
 					list_connect(i-1,i+2,arg_list);		/* Избавляемся от этих аргументов */
 					set_bit(ex->mode,IO_IN);
 					return filename;
 				}
 				if(!compare_str((char *)list_get(i,arg_list),">") &&
 			 		list_get(i+1,arg_list) != NULL) {
-					filename = list_get(i+1,arg_list);
+					filename = strdup((char *)list_get(i+1,arg_list));
 					list_connect(i-1,i+2,arg_list);		/* Избавляемся от этих аргументов */
 					set_bit(ex->mode,IO_OUT);
 					return filename;
