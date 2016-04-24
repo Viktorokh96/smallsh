@@ -51,6 +51,9 @@ list_id init_list();
 /* Удалить список */
 void list_del (list_id lid);
 
+/* Связыание дву элементов списка между собой с удаление промежуточных звеньев */
+void list_connect(unsigned num1, unsigned num2, list_id lid);
+
 /* Добавить элемент в начало списка */
 list *list_add (void *cont, size_t size, list_id lid);
 

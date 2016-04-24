@@ -11,15 +11,16 @@
 	} job;
 
 	typedef struct task_sh {
-		char *name;
-		pid_t pid;
-		pid_t ppid;
+		char *name;					/* Имя процесса */
+		pid_t pid;					/* Индетификатор процесса */
+		pid_t ppid;					/* Индетификатор родителя */
 	} task_sh;
 
 	typedef struct single_execute {	/* Структура исполняемой единицы */
 		char *name;
 		char **argv;				/* Аргументы исполняемой единицы */
-		char **files;				/* Файлы в которые или из которых идёт в\в данных */
+		char *file;					/* Файлы в которые или из которых идёт в\в данных */
+		int8_t mode;				/* Режим перенаправления ввода вывода */
 		struct
 			single_execute *next;	/* Следующая исполяемая единица в цепочке */		
 		int (*exec_func)(struct 
@@ -49,7 +50,7 @@
 	int (* is_shell_cmd(char *cmd)) (void *);
 
 	/* Подготовка аргументов для команды */
-	char **prepare_args(int num, unsigned mode);
+	void *prepare_args(int num, sing_exec *ex, unsigned mode);
 
 	/* Содание очереди на исполнение */
 	sing_exec *create_exec_queue();

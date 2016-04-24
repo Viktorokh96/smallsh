@@ -4,7 +4,7 @@
 #include "../parses/parse.h"
 #include <wait.h>
 
-#define is_spec(l,s)	(!compare_str((char *) list_entry((l)), s))
+#define is_same(l,s)	(!compare_str((char *) list_entry((l)), s))
 
 static inline 
 int queue_next (int p)
@@ -35,7 +35,7 @@ void free_exec(sing_exec *ex)
 			for (i = 0; ex->argv[i] != NULL; free(ex->argv[i]), i++); 
 			free(ex->argv);		
 		}
-		if(ex->files != NULL) free(ex->files);
+		if(ex->file != NULL) free(ex->file);
 		if(ex->next != NULL) free_exec(ex->next);
 	}
 }
@@ -58,19 +58,20 @@ int get_spec()
 }
 
 /* Подготавливаем аргументы */
-char **prepare_args(int num, unsigned mode)
+void *prepare_args(int num, sing_exec *ex, unsigned mode)
 {
 	char **argv;
+	char *filename;
 	int i, size, strsize;
 	list *tmp;
 
 	if (num < 0 || num > list_count(arg_list)) return NULL;
 
 	switch(mode) {
-		case TO_SPEC:
+		case FOR_ARGS:
 			size = 1;
 			for(tmp = list_get_header(num,arg_list); tmp != get_head(arg_list) &&  
-				(!is_spec(tmp,"&&")) && (!is_spec(tmp,"||"));
+				(!is_same(tmp,"&&")) && (!is_same(tmp,"||"));
 				tmp = tmp->mnext) size++;	/* Доходим до специального символа */
 			argv = malloc(size*sizeof(char *));
 			for (i = num; i < num+size-1; i++) {
@@ -84,6 +85,27 @@ char **prepare_args(int num, unsigned mode)
 
 			return argv;
 
+		case FOR_IO:
+			size = 1;
+			for(tmp = list_get_header(num,arg_list); tmp != get_head(arg_list) &&  
+				(!is_same(tmp,"&&")) && (!is_same(tmp,"||"));
+				tmp = tmp->mnext) size++;	/* Доходим до специального символа */
+			for (i = num; i < num+size-1; i++) {
+				if(!compare_str((char *)list_get(i,arg_list),"<") &&
+			 		list_get(i+1,arg_list) != NULL) {
+					filename = list_get(i+1,arg_list);
+					list_connect(i-1,i+2,arg_list);		/* Избавляемся от этих аргументов */
+					set_bit(ex->mode,IO_IN);
+					return filename;
+				}
+				if(!compare_str((char *)list_get(i,arg_list),">") &&
+			 		list_get(i+1,arg_list) != NULL) {
+					filename = list_get(i+1,arg_list);
+					list_connect(i-1,i+2,arg_list);		/* Избавляемся от этих аргументов */
+					set_bit(ex->mode,IO_OUT);
+					return filename;
+				}
+			}
 		default: return NULL;
 	}
 	return NULL;
@@ -173,8 +195,8 @@ int find_spec(int i)
 	list_for_each(tmp,list_get_header(i,arg_list)) {
 		p++;
 		if (list_entry(tmp) == NULL) return 0;
-		if (is_spec(tmp,"&&"))  return p+1; 
-		if (is_spec(tmp,"||"))  return p+1; 
+		if (is_same(tmp,"&&"))  return p+1; 
+		if (is_same(tmp,"||"))  return p+1; 
 	}
 	return 0;
 }
@@ -192,14 +214,14 @@ sing_exec *create_exec_queue()
 
 	/* Первое прохождение */
 	list_for_each(tmp, get_head(arg_list)) {
-		if (is_spec(tmp,"&&")) add_spec(SPEC_AND);
-		if (is_spec(tmp,"||")) add_spec(SPEC_OR);
+		if (is_same(tmp,"&&")) add_spec(SPEC_AND);
+		if (is_same(tmp,"||")) add_spec(SPEC_OR);
 	}
 
 	ex = (sing_exec *) malloc(sizeof(sing_exec));
 	ex->name = strdup((char *) list_get(0,arg_list));
-	ex -> argv = prepare_args(0, TO_SPEC);
-	ex -> files = NULL;	/* Временно */
+	ex -> file = (char *) prepare_args(0, ex , FOR_IO);	
+	ex -> argv = (char **) prepare_args(0, ex , FOR_ARGS);
 	ex -> next = NULL;
 	ex -> exec_func = (is_shell_cmd(ex->name)) ? &exec_shells : &exec;
 
@@ -209,8 +231,8 @@ sing_exec *create_exec_queue()
 		while((i = find_spec(i))) {
 			next = (sing_exec *) malloc(sizeof(sing_exec));
 			next ->	name = strdup((char *) list_get(i,arg_list));
-			next -> argv = prepare_args(i, TO_SPEC);
-			next -> files = NULL;	/* Временно */
+			next -> file = (char *)  prepare_args(i, ex , FOR_IO);	
+			next -> argv = (char **) prepare_args(i, ex,  FOR_ARGS);
 			next -> next = NULL;
 			next -> exec_func = (is_shell_cmd(next->name)) ? &exec_shells : &exec;		
 			past->next = next;

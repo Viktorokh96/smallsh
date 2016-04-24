@@ -23,11 +23,12 @@ inline void *list_get (unsigned num,list_id lid)
 {
 	if (lid < 0 || lid > MAXLISTS) return NULL;
 
-	list *lp;
-	if ((num > list_count(lid)-1) || (num < 0)) return NULL;
-	list_for_each(lp,get_head(lid)) {
+	if (num < 0) return NULL;
+	list *lp = get_head(lid);
+	while(1) {
+		lp = lp->mnext;
 		if (num--) continue; 
-		if (lp->msize != 0) return (lp + 1);
+		return (lp + 1);
 	}
 	return NULL;
 }
@@ -121,6 +122,27 @@ list *list_add_tail(void *cont, size_t size, list_id lid)
 		return new_list;						/* На случай, если понадобиться */
 	} 
 	else return NULL;
+}
+
+/* Связыание дву элементов списка между собой с удаление промежуточных звеньев */
+void list_connect(unsigned num1, unsigned num2, list_id lid)
+{
+	if (lid < 0 || lid > MAXLISTS) return;
+	if (num1 < 0) return;
+	if (num2 < 0) return;
+	if (num1 >= num2) return;					/* У меня всё строго */
+
+	if (bit_seted(bit_map, 1 << lid)) {			/* Если очеред инициализирована */
+		list *tmp1, *tmp2, *pnext;
+		tmp1 = list_get_header(num1,lid);
+		tmp2 = list_get_header(num2,lid);
+		pnext = tmp1->mnext;
+		list_get_header(num1,lid)->mnext = list_get_header(num2,lid);;
+		while((tmp1 = pnext) != tmp2) {
+			pnext = tmp1->mnext;
+			free(tmp1); 
+		}
+	}
 }
 
 
