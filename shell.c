@@ -14,10 +14,12 @@
 
 /* Инициализация служебных систем оболочки */
 void init_shell(unsigned mode, char *argv[])
-{
-	shell_name = strdup(argv[0]);
+{	
+	char *p;
+	p = shell_name = strdup(argv[0]);
 	shell_name += strlen(shell_name)-1;
-	for(;*(shell_name-1) != CH_DIR_SEP; shell_name--);
+	for(;(shell_name != p) && 
+		(*(shell_name-1) != CH_DIR_SEP); shell_name--);
 
 	if (bit_seted(mode,SIGNAL)) {
 		init_signals();
