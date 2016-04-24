@@ -141,7 +141,7 @@ void exec_next(sing_exec *ex, int stat)
 		if(spec == NO_SPEC) { ex->next->exec_func(ex->next); return; }
 		if (((stat == 0) && (spec == SPEC_AND)) ||
 			((stat != 0) && (spec == SPEC_OR)))
-			ex->next->exec_func(ex->next);
+			exec(ex->next);
 			else free_exec(ex->next);	/* Освобождаем ненужные элементы */ 
 	}
 }
@@ -152,35 +152,25 @@ int exec (sing_exec *ex)
 	int stat;
 	pid_t pid;
 	int child_stat;
-	
-	pid = fork();
-	if (pid == 0) {
-		if((stat = try_exec(getenv("PATH"),ex)) != 0) 
-		if((stat = try_exec(getenv("PWD"),ex)) != 0) {
-			printf("%s: %s <- исполняемый файл не найден.\n",shell_name,ex->name);
-			_exit(1);
-			
-		}
-	}
-	else {
-		wait(&child_stat);
-	}
-
-	exec_next(ex,stat);
-
-	return 0;
-}
-
-/* Запуск встроенных команд */
-int exec_shells (sing_exec *ex)
-{
-	int stat;
-
 	int (*sh_handler)(void *prm);
 
-	sh_handler = is_shell_cmd(ex->name);
-
-	stat = sh_handler(ex->argv);
+	sh_handler = is_shell_cmd(ex->name);			/* Проверяем, встроена ли функция в оболочку */
+		
+	if (sh_handler != NULL) {
+		stat = sh_handler(ex->argv);
+	} else {
+		pid = fork();
+		if (pid == 0) { 
+			if((stat = try_exec(getenv("PATH"),ex)) != 0) 
+			if((stat = try_exec(getenv("PWD"),ex)) != 0) {
+				printf("%s: %s <- исполняемый файл не найден.\n",shell_name,ex->name);
+				_exit(1);
+			}
+		}
+		else {
+			wait(&child_stat);
+		}
+	}
 
 	exec_next(ex,stat);
 
@@ -223,7 +213,6 @@ sing_exec *create_exec_queue()
 	ex -> file = (char *) prepare_args(0, ex , FOR_IO);	
 	ex -> argv = (char **) prepare_args(0, ex , FOR_ARGS);
 	ex -> next = NULL;
-	ex -> exec_func = (is_shell_cmd(ex->name)) ? &exec_shells : &exec;
 
 	if(!no_spec()) {	/* Обнаружена очередь */
 		past = ex;
@@ -234,7 +223,6 @@ sing_exec *create_exec_queue()
 			next -> file = (char *)  prepare_args(i, ex , FOR_IO);	
 			next -> argv = (char **) prepare_args(i, ex,  FOR_ARGS);
 			next -> next = NULL;
-			next -> exec_func = (is_shell_cmd(next->name)) ? &exec_shells : &exec;		
 			past->next = next;
 			past = next;
 		}

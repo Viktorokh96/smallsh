@@ -52,6 +52,9 @@
 	/* Подготовка аргументов для команды */
 	void *prepare_args(int num, sing_exec *ex, unsigned mode);
 
+	/* Запуск команды */
+	int exec (sing_exec *ex);
+
 	/* Содание очереди на исполнение */
 	sing_exec *create_exec_queue();
 
