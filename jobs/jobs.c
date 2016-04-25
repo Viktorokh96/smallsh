@@ -271,6 +271,7 @@ void init_jobs()
 	add_job("cd",	cd_handl);
 	add_job("version", version_handl);
 	add_job("meow",meow_handl);
+	add_job("declare",declare_handl)
 }
 
 void del_jobs()

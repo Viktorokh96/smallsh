@@ -32,7 +32,7 @@ int cd_handl(void *prm)
 					return 1;
 				}
 			}
-			else if (!compare_str(argv[1],"back")) {
+			else if (!compare_str(argv[1],"-b")) {
 				past = (char *) list_pop(path_list);
 				if(!list_empty(get_head(path_list))) chdir(past);
 			} 
@@ -63,6 +63,18 @@ int cd_handl(void *prm)
 int version_handl(void *prm)
 {
 	printf("Interpreter %s, version 0.001.\n",shell_name);
+
+	return 0;
+}
+
+int declare_handl(void *prm)
+{
+	int i;
+#ifdef __USE_GNU
+	for(i = 0; environ[i]; i++) printf("%s\n", environ[i]);
+#else
+	for(i = 0; __environ[i] ; i++) printf("%s\n", __environ[i]);
+#endif
 
 	return 0;
 }
