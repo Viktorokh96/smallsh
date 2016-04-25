@@ -107,6 +107,21 @@ void *prepare_args(int num, sing_exec *ex, unsigned mode)
 					return filename;
 				}
 			}
+			return NULL;
+
+		case FOR_BACKGR:
+			size = 1;
+			for(tmp = list_get_header(num,arg_list); tmp != get_head(arg_list) &&  
+				(!is_same(tmp,"&&")) && (!is_same(tmp,"||"));
+				tmp = tmp->mnext) size++;	/* Доходим до специального символа */
+				for (i = num; i < num+size-1; i++) {
+					if(!compare_str((char *)list_get(i,arg_list),"&")) {
+						set_bit(ex->mode,RUN_BACKGR);
+						list_connect(i-1,i+1,arg_list);		/* Избавляемся от этого символа */
+						return NULL;
+					}
+				}
+				return NULL;
 		default: return NULL;
 	}
 	return NULL;
@@ -183,7 +198,13 @@ int exec (sing_exec *ex)
 			}
 		}
 		else {
-			wait(&child_stat);
+			if bit_seted(ex->mode,RUN_BACKGR) {
+				add_bg_job(ex->name,pid,shell_pid);
+				printf("In backgr PID %d 	PPID %d\n",pid,shell_pid);
+			} else { /* Нужно ожидать завершения всех фоновых процессов смотри man 2 waitpid */
+				while(wait(&child_stat) > 0);
+				/* printf ("PROC PID -> %d\n",wait(&child_stat)); */
+			}
 		}
 	}
 
@@ -225,6 +246,7 @@ sing_exec *create_exec_queue()
 
 	ex = (sing_exec *) malloc(sizeof(sing_exec));
 	ex->name = strdup((char *) list_get(0,arg_list));
+	prepare_args(0,ex,FOR_BACKGR);
 	ex -> file = (char *) prepare_args(0, ex , FOR_IO);	
 	ex -> argv = (char **) prepare_args(0, ex , FOR_ARGS);
 	ex -> next = NULL;
@@ -235,6 +257,7 @@ sing_exec *create_exec_queue()
 		while((i = find_spec(i))) {
 			next = (sing_exec *) malloc(sizeof(sing_exec));
 			next ->	name = strdup((char *) list_get(i,arg_list));
+			prepare_args(i,ex,FOR_BACKGR);
 			next -> file = (char *)  prepare_args(i, ex , FOR_IO);	
 			next -> argv = (char **) prepare_args(i, ex,  FOR_ARGS);
 			next -> next = NULL;
