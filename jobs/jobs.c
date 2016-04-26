@@ -2,12 +2,13 @@
 #include <string.h>
 #include "handlers.h"
 #include "../parses/parse.h"
+#include "../signal/signal.h"
 #include <wait.h>
 #include <errno.h>
 
 #define is_same(l,s)	(!compare_str((char *) list_entry((l)), s))
 
-static inline 
+ 
 int queue_next (int p)
 {
 	if (p < SPEC_LENG-1) return p+1;
@@ -21,7 +22,7 @@ struct special_queue {	/* Очередь специальных символов
 	int (*next)(int p);	/* Метод, возвращающий следущий элемент */
 } sp_queue;
 
-static inline
+
 int no_spec()
 {
 	return (sp_queue.prod == sp_queue.cons);
@@ -148,13 +149,13 @@ int try_exec(char *path, sing_exec *ex)
 	return state;
 }
 
-static inline 
+ 
 void exec_next(sing_exec *ex, int stat)
 {
 	int spec;
 	if (ex->next != NULL) {
 		spec = get_spec();
-		if(spec == NO_SPEC) { ex->next->exec_func(ex->next); return; }
+		if(spec == NO_SPEC) { exec(ex->next); return; }
 		if (((stat == 0) && (spec == SPEC_AND)) ||
 			((stat != 0) && (spec == SPEC_OR)))
 			exec(ex->next);
@@ -178,15 +179,11 @@ void switch_io(sing_exec *ex)
 int exec (sing_exec *ex)
 {
 	int stat;
-	pid_t pid;
+	pid_t pid, ch_pid;
 	int child_stat;
-	int (*sh_handler)(void *prm);
-
-	sh_handler = is_shell_cmd(ex->name);			/* Проверяем, встроена ли функция в оболочку */
-
 		
-	if (sh_handler != NULL) {
-		stat = sh_handler(ex->argv);
+	if (ex->handler != NULL) {
+		stat = ex->handler(ex->argv);
 	} else {
 		pid = fork();
 		if (pid == 0) { 
@@ -198,22 +195,24 @@ int exec (sing_exec *ex)
 			}
 		}
 		else {
-			if bit_seted(ex->mode,RUN_BACKGR) {
+			printf("NEW PROCESS PID -> %d\n",pid);
+			if (bit_seted(ex->mode,RUN_BACKGR)) {
+				printf("%x\n", ex->mode);
 				add_bg_job(ex->name,pid,shell_pid);
 				printf("In backgr PID %d 	PPID %d\n",pid,shell_pid);
 			} else { /* Нужно ожидать завершения всех фоновых процессов смотри man 2 waitpid */
-				while(wait(&child_stat) > 0);
-				/* printf ("PROC PID -> %d\n",wait(&child_stat)); */
+				ch_pid = waitpid(pid,&child_stat,0);	/* Ожидаем завершение выполнения текущего процесса */
+				printf ("PROC PID -> %d\n",ch_pid); 
 			}
 		}
 	}
 
 	exec_next(ex,stat);
-
+	free(ex);						/* Процесс отработал своё и больше не нужен */
 	return 0;
 }
 
-static inline 
+ 
 int find_spec(int i)
 {
 	int p = i;
@@ -245,10 +244,12 @@ sing_exec *create_exec_queue()
 	}
 
 	ex = (sing_exec *) malloc(sizeof(sing_exec));
+	ex->mode = 0;
 	ex->name = strdup((char *) list_get(0,arg_list));
 	prepare_args(0,ex,FOR_BACKGR);
 	ex -> file = (char *) prepare_args(0, ex , FOR_IO);	
 	ex -> argv = (char **) prepare_args(0, ex , FOR_ARGS);
+	ex->handler = is_shell_cmd(ex->name);			/* Проверяем, встроена ли функция в оболочку */
 	ex -> next = NULL;
 
 	if(!no_spec()) {	/* Обнаружена очередь */
@@ -256,10 +257,12 @@ sing_exec *create_exec_queue()
 		i = 0;
 		while((i = find_spec(i))) {
 			next = (sing_exec *) malloc(sizeof(sing_exec));
+			next -> mode = 0;
 			next ->	name = strdup((char *) list_get(i,arg_list));
 			prepare_args(i,ex,FOR_BACKGR);
 			next -> file = (char *)  prepare_args(i, ex , FOR_IO);	
 			next -> argv = (char **) prepare_args(i, ex,  FOR_ARGS);
+			next->handler = is_shell_cmd(next->name);	/* Проверяем, встроена ли функция в оболочку */
 			next -> next = NULL;
 			past->next = next;
 			past = next;
@@ -295,6 +298,7 @@ void init_jobs()
 	add_job("version", version_handl);
 	add_job("meow",meow_handl);
 	add_job("declare",declare_handl)
+	add_job("kill",kill_handl);
 }
 
 void del_jobs()

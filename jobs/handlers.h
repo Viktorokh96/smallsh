@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include "../shell.h"
+#include "./jobs.h"
 #include "../parses/parse.h"
 
 int exit_handl(void *prm)
@@ -56,6 +57,23 @@ int cd_handl(void *prm)
 	/* Установка нового значения в переменную окружения PWD */
 		setenv("PWD",curr_path,1);	
 	}
+
+	return 0;
+}
+
+int kill_handl(void *prm)
+{
+	char **argv = (char **) prm;
+
+	/* Выполнение внешней функции */
+	sing_exec *ex = (sing_exec *) malloc(sizeof(sing_exec));
+	ex->name = strdup(argv[0]);
+	ex->mode = 0;
+	ex->file = NULL;
+	ex->argv = argv;
+	ex->next = NULL;
+	
+	exec(ex);
 
 	return 0;
 }

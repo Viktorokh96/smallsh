@@ -23,8 +23,7 @@
 		int8_t mode;				/* Режим перенаправления ввода вывода */
 		struct
 			single_execute *next;	/* Следующая исполяемая единица в цепочке */		
-		int (*exec_func)(struct 
-			 single_execute *self);/* Функция исполнения */
+		int (*handler)(void *prm);	/* Указатель на исполнителя, если он есть */
 	} sing_exec;
 
 	job job_sh; 		/* Структура для описания обработчика встроенной функции */

@@ -5,13 +5,13 @@
 list list_heads[MAXLISTS];		/* Массив очередей */
 unsigned bit_map = 0;			/* Битовая карта свободных списков */
 
-inline void *list_entry (list *lp) /* Возвращает указатель на содержимое */
+ void *list_entry (list *lp) /* Возвращает указатель на содержимое */
 {
 	if (lp->msize != 0) return (lp + 1);
 	else return NULL;
 }
 
-inline unsigned list_count (list_id lid)
+ unsigned list_count (list_id lid)
 {
 	unsigned count = 0;
 	list *tmp;
@@ -19,7 +19,7 @@ inline unsigned list_count (list_id lid)
 	return count;
 }
 
-inline void *list_get (unsigned num,list_id lid)
+ void *list_get (unsigned num,list_id lid)
 {
 	if (lid < 0 || lid > MAXLISTS) return NULL;
 
@@ -33,13 +33,13 @@ inline void *list_get (unsigned num,list_id lid)
 	return NULL;
 }
 
-inline list *list_get_header (unsigned num,list_id lid)
+ list *list_get_header (unsigned num,list_id lid)
 {
 	return (list *) list_get(num,lid)-1;
 }
 
 /* Извлечь элемент из начала списка, с последующим удалением элемента */
-inline	void *list_pop (list_id lid)
+void *list_pop (list_id lid)
 {
 	if (lid < 0 || lid > MAXLISTS) return NULL;
 	if (bit_seted(bit_map, 1 << lid)) {			/* Если очеред инициализирована */
@@ -146,7 +146,7 @@ void list_connect(unsigned num1, unsigned num2, list_id lid)
 }
 
 
-inline list *get_head(list_id lid) 
+ list *get_head(list_id lid) 
 {
 	if (lid < 0 || lid > MAXLISTS) return NULL;
 

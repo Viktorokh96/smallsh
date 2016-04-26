@@ -45,7 +45,7 @@ void exec_command()
 }
 
 /* Получаем команду от пользователя */
-static inline 
+ 
 char *get_command(char *cmd)
 {
 	char *q = cmd;
@@ -60,7 +60,7 @@ get:q = fgets(q,CMD_SIZE,stdin);
     return cmd;
 }
 
-static inline 
+ 
 void clear_cmd_buff(char *cmd_buf)
 {
 	int i;

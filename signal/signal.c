@@ -12,6 +12,7 @@ void show_stoped_job()
 void sig_handler(int sig)
 {
 	if (sig == SIGINT) {
+		printf("\nGETPID -> %d\n",getpid());
 		if (getpid() != 0) {
 			printf("\n");
 			fflush(stdout);
