@@ -60,7 +60,7 @@ list_id init_list()
 	list_id new_list;
 	search_free(bit_map,new_list);
 	if (new_list == MAXLISTS) 
-		return -1;
+		return UNINIT;
 	/* Инициализация головы списка */
 	list_heads[new_list].mnext = &list_heads[new_list];
 	list_heads[new_list].msize = 0;

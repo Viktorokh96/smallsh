@@ -1,3 +1,12 @@
+/*	Минималистичный командный интерпертатор smallsh (в будующем возможно "nanosh")
+ *	Данное ПО создано исключительно в образовательных и некоммерческих целях.
+ *	Оно не защищено какими-либо лицензиями на распространение или модификацию и является
+ *	жертвой больного воображения автора. Существует в виде "как есть", без каких-либо гарантии.
+ *	Поддерживаемая ОС - Linux с ядром версии от 2.6.11 и выше. 
+ *	Дополнительные флаги при компиляции - скрещенные пальцы.
+ *	Здесь есть пасхалка.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -15,13 +24,16 @@
 /* Инициализация служебных систем оболочки */
 void init_shell(unsigned mode, char *argv[])
 {	
+	/* Здесь обрабатываюсь аргументы, полученные от пользователя при запуске оболчки */
 	char *p;
 	p = shell_name = strdup(argv[0]);
 	shell_name += strlen(shell_name)-1;
-	for(;(shell_name != p) && 
+	for(;(shell_name != p) && 		/* Получаем полное имя процесса оболочки */
 		(*(shell_name-1) != CH_DIR_SEP); shell_name--);
 
-	if (bit_seted(mode,SIGNAL)) {
+	/* Поочерёдно иницииализируем все подсистем оболочки */
+	/*ВАЖНО! Независимость систем друг от друга не гарантируется! */
+	if (bit_seted(mode,SIGNAL)) {	
 		init_signals();
 	}
 	if (bit_seted(mode,JOBS)) {
@@ -31,7 +43,7 @@ void init_shell(unsigned mode, char *argv[])
 		init_general();
 	}
 	if (bit_seted(mode,LIST)) {
-		arg_list = -1;
+		arg_list = UNINIT;
 	}
 }
 
@@ -40,8 +52,8 @@ void exec_command()
 {
 	sing_exec *first;
 
-	if((first = create_exec_queue()) != NULL)				/* Создание очереди на исполнение */
-		exec(first);										/* и непосредственное исполнение */
+	first = create_exec_queue();				/* Создание очереди на исполнение */
+	exec(first);								/* и непосредственное исполнение */
 }
 
 /* Получаем команду от пользователя */
@@ -78,7 +90,7 @@ int main(int argc, char *argv[])
 		clear_cmd_buff(command);					 	/* Принудительная очистка */
 		printf("%s:%s#|>",user_name,short_path(curr_path));
 		cmd = get_command(command);			 			/* Выполнение команды */
-		while((cmd = parse_cmd(cmd)) != NULL)
+		while((cmd = parse_cmd(cmd)) != NULL)			/* Здесь гарантируется выполнение команд разделённых ';' */
 			exec_command();
 		exec_command();									/* Выполнение последней команды */	
 	}
@@ -90,5 +102,5 @@ void end_of_work()
 {
 	del_general();
 	del_jobs();
-	_exit(1);
+	_exit(EXIT_SUCCESS);
 }

@@ -14,7 +14,7 @@ char *parse_cmd(char *cmd)
 	char *p,*q;
 
 	/* Удаляем старый список */
-	if (arg_list != -1)	list_del(arg_list);
+	if (arg_list != UNINIT)	list_del(arg_list);
 
 	arg_list = init_list();
 

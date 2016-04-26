@@ -49,7 +49,7 @@
 	int (* is_shell_cmd(char *cmd)) (void *);
 
 	/* Подготовка аргументов для команды */
-	void *prepare_args(int num, sing_exec *ex, unsigned mode);
+	void *prepare_args(int num, sing_exec *ex, unsigned mode, list_id list);
 
 	/* Запуск команды */
 	int exec (sing_exec *ex);

@@ -61,6 +61,7 @@ int cd_handl(void *prm)
 	return 0;
 }
 
+/* Перегрузка готовой программы kill, для дополнительного функционала */	
 int kill_handl(void *prm)
 {
 	char **argv = (char **) prm;

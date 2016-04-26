@@ -13,7 +13,10 @@ typedef struct  list_head { /* Заголовок элемента */
 typedef unsigned int list_id;
 
 /* Максимальное количество одновременно созданных списков */
-#define MAXLISTS	32 
+#define MAXLISTS	32
+
+/* Значение неинициализированного списка */
+#define UNINIT	-1 
 
 /* Поиск свободного списка */
 #define search_free(m,p) \
