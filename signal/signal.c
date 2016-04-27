@@ -21,7 +21,6 @@ void sig_handler(int sig)
 	if (sig == SIGTSTP) {
 		if (getpid() != 0 && current.pid) {
 			kill (current.pid,SIGTSTP);
-			printf("stop %d\n",current.pid);
 		}
 	}
 
@@ -32,8 +31,9 @@ void sig_handler(int sig)
 	return;
 }
 
-/* 	Игнорирование сигналов наследуется между ветвелниями 
-	и вызовами exec, это полезно */
+/* 	Игнорирование и установка по умолчанию
+	сигналов наследуется между ветвелниями 
+	и вызовами exec. Это полезно! */
 void set_int_ignore() 
 {
 	signal (SIGINT, SIG_IGN);
@@ -42,8 +42,9 @@ void set_int_ignore()
 
 void set_int_dfl()
 {
+	signal (SIGQUIT, SIG_DFL);
+	signal (SIGINT, SIG_DFL);
 	signal (SIGTSTP, SIG_DFL);
-	signal (SIGSTOP, SIG_DFL);
 }
 
 int init_signals()
