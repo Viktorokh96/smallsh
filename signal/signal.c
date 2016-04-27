@@ -19,7 +19,7 @@ void sig_handler(int sig)
 	}
 
 	if (sig == SIGTSTP) {
-		if (getpid() != 0) {
+		if (getpid() != 0 && current.pid) {
 			kill (current.pid,SIGTSTP);
 			printf("stop %d\n",current.pid);
 		}

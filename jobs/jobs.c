@@ -227,6 +227,7 @@ int exec (sing_exec *ex)
 	}
 
 	exec_next(ex,stat);
+	current.pid = 0;
 	free(ex);						/* Процесс отработал своё и больше не нужен */
 	return (WIFEXITED(stat)) ? WEXITSTATUS(stat) : -1;
 }

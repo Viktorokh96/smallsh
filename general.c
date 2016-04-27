@@ -18,7 +18,8 @@ int init_general()
 	shell_pid = getpid();
 	home_path = getenv("HOME");
 	user_name = getpwuid(geteuid())->pw_name;				/* Получаем имя пользователя */
-
+	current.pid = 0;
+	
 	return 0;
 }
 
