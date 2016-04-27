@@ -12,9 +12,7 @@ void show_stoped_job()
 void sig_handler(int sig)
 {
 	if (sig == SIGINT) {
-		printf("\nGETPID -> %d\n",getpid());
 		if (getpid() != 0) {
-			printf("\n");
 			fflush(stdout);
 		}
 	}
@@ -25,14 +23,25 @@ void sig_handler(int sig)
 		}
 	}
 
+	if ( sig == SIGCHLD) {
+
+	}
+
 	return;
 }
 
+/* 	Игнорирование сигналов наследуется между ветвелниями 
+	и вызовами exec, это полезно */
+void set_int_ignore() 
+{
+	signal (SIGINT, SIG_IGN);
+	signal (SIGQUIT, SIG_IGN);
+}
 
 int init_signals()
 {
 	signal(SIGINT,&sig_handler);
-	//signal(SIGTSTP,&sig_handler);
+	signal(SIGCHLD,&sig_handler);
 
 	return 0;
 }

@@ -4,7 +4,7 @@
  *	жертвой больного воображения автора. Существует в виде "как есть", без каких-либо гарантии.
  *	Поддерживаемая ОС - Linux с ядром версии от 2.6.11 и выше. 
  *	Дополнительные флаги при компиляции - скрещенные пальцы.
- *	Здесь есть пасхалка.
+ *	Здесь есть пасхалка :)
 */
 
 #include <stdio.h>
@@ -72,7 +72,7 @@ get:q = fgets(q,CMD_SIZE,stdin);
     return cmd;
 }
 
- 
+static inline 
 void clear_cmd_buff(char *cmd_buf)
 {
 	int i;
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 	init_shell(SIGNAL | JOBS | GENERAL | LIST , argv);
 	
 	for(;;) {
-		clear_cmd_buff(command);					 	/* Принудительная очистка */
+		clear_cmd_buff(command);					 	/* Принудительная очистка буффера команд */
 		printf("%s:%s#|>",user_name,short_path(curr_path));
 		cmd = get_command(command);			 			/* Выполнение команды */
 		while((cmd = parse_cmd(cmd)) != NULL)			/* Здесь гарантируется выполнение команд разделённых ';' */

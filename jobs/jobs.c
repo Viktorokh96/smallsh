@@ -190,6 +190,7 @@ int exec (sing_exec *ex)
 		pid = fork();
 		if (pid == 0) { 
 			switch_io(ex);
+			if (bit_seted(ex->mode,RUN_BACKGR)) set_int_ignore();
 			if((stat = try_exec(getenv("PATH"),ex)) != 0) 
 			if((stat = try_exec(getenv("PWD"),ex)) != 0) {
 				printf("%s: %s <- исполняемый файл не найден.\n",shell_name,ex->name);
@@ -199,11 +200,23 @@ int exec (sing_exec *ex)
 		else {
 			printf("NEW PROCESS PID -> %d\n",pid);
 			if (bit_seted(ex->mode,RUN_BACKGR)) {
-				printf("%x\n", ex->mode);
 				add_bg_job(ex->name,pid,shell_pid);
 				printf("In backgr PID %d 	PPID %d\n",pid,shell_pid);
 			} else { /* Нужно ожидать завершения всех фоновых процессов смотри man 2 waitpid */
 				ch_pid = waitpid(pid,&child_stat,0);	/* Ожидаем завершение выполнения текущего процесса */
+				if(ch_pid == -1) {
+					perror("waitpid: ");
+				}
+				/* if (WTERMSIG(stat) == SIGHUP) exec(ex); Нужно проверять свободен ли терминал в момент вывода */
+				if (WIFSIGNALED (stat))						/* Либо перенаправить ввод-вывод в временный файл */
+					printf ("%s: process %d killed by signal :> %d%s\n", shell_name, pid,
+						WTERMSIG (stat),
+						(WCOREDUMP(stat)) ? " (dumped core)" : "");
+
+				if (WIFSTOPPED (stat))
+					printf ("%s: process %d stoped with signal :> %d\n", shell_name, pid,
+					WSTOPSIG (stat));
+					
 				printf ("PROC PID -> %d\n",ch_pid); 
 			}
 		}
@@ -211,7 +224,7 @@ int exec (sing_exec *ex)
 
 	exec_next(ex,stat);
 	free(ex);						/* Процесс отработал своё и больше не нужен */
-	return 0;
+	return (WIFEXITED(stat)) ? WEXITSTATUS(stat) : -1;
 }
 
  

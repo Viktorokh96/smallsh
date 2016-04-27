@@ -4,6 +4,8 @@
 	
 	void sig_handler(int sig);
 
+	void set_int_ignore();
+
 	int init_signals();
 
 #endif
