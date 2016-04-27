@@ -54,6 +54,38 @@ void *list_pop (list_id lid)
 	} else return NULL;
 }
 
+/* Проверка присутствия элемента в списке */
+int list_include(list *lp, list_id lid)
+{
+	if (lp == NULL) return 0;	
+	if (lid < 0 || lid > MAXLISTS) return 0;
+	if (bit_seted(bit_map, 1 << lid)) {			/* Если очеред инициализирована */
+		list *tmp;
+		list_for_each(tmp,get_head(lid)) {
+			if (tmp == lp) return 1;			/* Если нашли */
+		}
+	}
+
+	return 0;
+}
+
+/* Удалить конкретный элемент */
+void list_del_elem(list *lp, list_id lid)
+{
+	if (lp == NULL) return;
+	if (lid < 0 || lid > MAXLISTS) return;
+	if (bit_seted(bit_map, 1 << lid)) {			/* Если очеред инициализирована */
+		if(!list_include(lp,lid)) return;		/* Защита от зацикливания */
+		list *tmp1,*tmp2 = get_head(lid);
+		/* Ищем элемент */
+		for(tmp1 = tmp2; (tmp2 = tmp2->mnext) != lp; tmp1 = tmp1->mnext);
+		if(tmp2 != get_head(lid)) {				/* Если нашли */
+			tmp1->mnext = tmp2->mnext;			/* Связываем соседей */
+			free(tmp2);							/* Уничтожаем элемент */
+		} else return;
+	}
+}
+
 /* Инициализирует список */
 list_id init_list()
 {

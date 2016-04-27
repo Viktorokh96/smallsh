@@ -65,13 +65,13 @@ int cd_handl(void *prm)
 int jobs_handl(void *prm)
 {
 	list *tmp;
-	sing_exec tsk;
+	sing_exec *tsk;
 	int  i = 1;
 
 	list_for_each(tmp,get_head(bg_jobs)) {
-			tsk = *((sing_exec*) list_entry(tmp));
-			printf("[%d] %s\t\t%s\n",i++,(tsk.status == TSK_RUNNING)? 
-				"Running" : "Stopped",tsk.name);
+			tsk = (sing_exec*) list_entry(tmp);
+			printf("[%d] %s\t\t%s\n",i++,(tsk->status == TSK_RUNNING)? 
+				"Running" : "Stopped",tsk->name);
 	}
 
 	return 0;
@@ -83,12 +83,14 @@ int fg_handl(void *prm)
 	sing_exec *tsk;
 		
 	list_for_each(tmp,get_head(bg_jobs)) {
-			tsk = (sing_exec*) list_entry(tmp);
-			if(tsk->status == TSK_STOPPED) {
+			tsk = (sing_exec *) malloc(sizeof(sing_exec));
+			memcpy(tsk,(sing_exec*) list_entry(tmp),sizeof(sing_exec));
+			//if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
 				kill(tsk->pid, SIGCONT);
-				wait_child(tsk);
-				return 0;
-			}
+			wait_child(tsk);
+			list_del_elem(tmp,bg_jobs);
+			free(tsk);
+			return 0;
 	}
 
 	return 0;
@@ -98,7 +100,7 @@ int fg_handl(void *prm)
 int kill_handl(void *prm)
 {
 	list *tmp;
-	sing_exec tsk;
+	sing_exec *tsk;
 	pid_t pid;
 	int i = 1;
 	char **argv = (char **) prm;
@@ -118,11 +120,11 @@ int kill_handl(void *prm)
 	for(; argv[i] != NULL; i++) {
 		pid = atoi(argv[i]);
 		list_for_each(tmp,get_head(bg_jobs)) {
-			tsk = *((sing_exec*) list_entry(tmp));
-			if(tsk.pid == pid) {
+			tsk = (sing_exec*) list_entry(tmp);
+			if(tsk->pid == pid) {
 				waitpid(pid,NULL,WNOHANG);
 				printf("Killed -> %d 	%s\n",
-					pid, tsk.name);
+					pid, tsk->name);
 			}
 		}
 	}
