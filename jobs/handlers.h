@@ -122,12 +122,17 @@ int kill_handl(void *prm)
 		list_for_each(tmp,get_head(bg_jobs)) {
 			tsk = (sing_exec*) list_entry(tmp);
 			if(tsk->pid == pid) {
+				if (tsk->status == TSK_STOPPED)
+					kill(tsk->pid,SIGCONT);
 				waitpid(pid,NULL,WNOHANG);
 				printf("Killed -> %d 	%s\n",
 					pid, tsk->name);
+				tsk->status = TSK_KILLED;
 			}
 		}
 	}
+
+	update_jobs();
 
 	return 0;
 }

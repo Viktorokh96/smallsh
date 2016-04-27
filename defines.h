@@ -31,6 +31,7 @@
 /* Состояния процесса */
 #define	TSK_RUNNING	1
 #define TSK_STOPPED	2
+#define TSK_KILLED	3
 
 #define ESCAPING	'\\'
 

@@ -220,7 +220,7 @@ int wait_child(sing_exec *ex)
 {
 	int child_stat;
 
-	pid_t ch_pid = waitpid(ex->pid,&child_stat,WUNTRACED /*| WCONTINUED*/);
+	pid_t ch_pid = waitpid(ex->pid,&child_stat,WUNTRACED);
 	
 	if(ch_pid == -1) {
 		perror("waitpid: ");
@@ -239,6 +239,24 @@ int wait_child(sing_exec *ex)
 
 	return child_stat;
 }
+
+void update_jobs()
+{
+	list *tmp, *next;
+	sing_exec *tsk;
+
+	for (tmp = get_head(bg_jobs)->mnext; 
+	tmp != get_head(bg_jobs);
+	tmp = next) { 
+		tsk = (sing_exec*) list_entry(tmp); 
+		if (tsk->status == TSK_KILLED) {
+			next = tmp->mnext;
+			list_del_elem(tmp,bg_jobs);
+		} else {
+			next = tmp->mnext;
+		}
+	}
+}
  
 int find_spec(int i, list_id lid)
 {
@@ -254,7 +272,7 @@ int find_spec(int i, list_id lid)
 }
 
 
-/* Созданиее очереди на исполнение */
+/* Создание очереди на исполнение */
 sing_exec *create_exec_queue()
 {
 	sing_exec *ex, *past, *next;

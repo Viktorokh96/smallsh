@@ -54,6 +54,9 @@
 	/* Ожидание дочернего процесса */
 	int wait_child(sing_exec *ex);
 
+	/* Обновление списка фоновых процессов */
+	void update_jobs();
+
 	/* Содание очереди на исполнение */
 	sing_exec *create_exec_queue();
 
