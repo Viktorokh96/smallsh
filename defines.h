@@ -28,6 +28,10 @@
 #define FOR_IO			2			/* Проверять перенаправление ввода вывода */ 
 #define FOR_BACKGR		3			/* Проверять запуск в фоновом режиме */
 
+/* Состояния процесса */
+#define	TSK_RUNNING	1
+#define TSK_STOPPED	2
+
 #define ESCAPING	'\\'
 
 #define DIR_SEP		"/"

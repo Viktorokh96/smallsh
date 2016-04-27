@@ -1,5 +1,6 @@
 #include <signal.h>
 #include <stdio.h>
+#include <wait.h>
 #include "signal.h"
 #include "../jobs/jobs.h"
 #include "../general.h"
@@ -18,14 +19,8 @@ void sig_handler(int sig)
 		}
 	}
 
-	if (sig == SIGTSTP) {
-		if (getpid() != 0 && current.pid) {
-			kill (current.pid,SIGTSTP);
-		}
-	}
-
-	if ( sig == SIGCHLD) {
-
+	if ( sig == SIGCHLD ) {
+		waitpid(-1,NULL,WNOHANG);				/* Обрабатываем скелет завершившегося процесса */
 	}
 
 	return;
@@ -38,6 +33,7 @@ void set_int_ignore()
 {
 	signal (SIGINT, SIG_IGN);
 	signal (SIGQUIT, SIG_IGN);
+	signal (SIGTSTP, SIG_IGN);
 }
 
 void set_int_dfl()
@@ -50,7 +46,7 @@ void set_int_dfl()
 int init_signals()
 {
 	signal(SIGINT,&sig_handler);
-	signal(SIGTSTP,&sig_handler);
+	signal(SIGTSTP,SIG_IGN);
 	signal(SIGCHLD,&sig_handler);
 
 	return 0;

@@ -1,8 +1,9 @@
 #ifndef HANDLER_H
 #define HANDLER_H
-#include "../general.h"
 #include <unistd.h>
 #include <stdlib.h>
+#include <wait.h>
+#include "../general.h"
 #include "../shell.h"
 #include "./jobs.h"
 #include "../parses/parse.h"
@@ -61,10 +62,47 @@ int cd_handl(void *prm)
 	return 0;
 }
 
+int jobs_handl(void *prm)
+{
+	list *tmp;
+	sing_exec tsk;
+	int  i = 1;
+
+	list_for_each(tmp,get_head(bg_jobs)) {
+			tsk = *((sing_exec*) list_entry(tmp));
+			printf("[%d] %s\t\t%s\n",i++,(tsk.status == TSK_RUNNING)? 
+				"Running" : "Stopped",tsk.name);
+	}
+
+	return 0;
+}
+
+int fg_handl(void *prm)
+{
+	list *tmp;
+	sing_exec *tsk;
+		
+	list_for_each(tmp,get_head(bg_jobs)) {
+			tsk = (sing_exec*) list_entry(tmp);
+			if(tsk->status == TSK_STOPPED) {
+				kill(tsk->pid, SIGCONT);
+				wait_child(tsk);
+				return 0;
+			}
+	}
+
+	return 0;
+}
+
 /* Перегрузка готовой программы kill, для дополнительного функционала */	
 int kill_handl(void *prm)
 {
+	list *tmp;
+	sing_exec tsk;
+	pid_t pid;
+	int i = 1;
 	char **argv = (char **) prm;
+
 
 	/* Выполнение внешней функции */
 	sing_exec *ex = (sing_exec *) malloc(sizeof(sing_exec));
@@ -75,6 +113,19 @@ int kill_handl(void *prm)
 	ex->next = NULL;
 	
 	exec(ex);
+
+	while (*argv[i] == '-') i++;
+	for(; argv[i] != NULL; i++) {
+		pid = atoi(argv[i]);
+		list_for_each(tmp,get_head(bg_jobs)) {
+			tsk = *((sing_exec*) list_entry(tmp));
+			if(tsk.pid == pid) {
+				waitpid(pid,NULL,WNOHANG);
+				printf("Killed -> %d 	%s\n",
+					pid, tsk.name);
+			}
+		}
+	}
 
 	return 0;
 }

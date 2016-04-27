@@ -63,5 +63,7 @@ list *list_add (void *cont, size_t size, list_id lid);
 /* Добавить элемент в конец списка */
 list *list_add_tail (void *cont, size_t size, list_id lid);
 
+/* Удалить конкретный элемент */
+void list_del_elem(list *lp, list_id lid);
 
 #endif

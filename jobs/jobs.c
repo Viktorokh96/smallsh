@@ -179,17 +179,14 @@ void switch_io(sing_exec *ex)
 int exec (sing_exec *ex)
 {
 	int stat;
-	pid_t pid, ch_pid;
-	int child_stat;
 
 	if(ex == NULL) return 1;								/* Какой-то процесс не был сформирован */
 		
 	if (ex->handler != NULL) {
 		stat = ex->handler(ex->argv);
 	} else {
-		pid = fork();
-		ex->pid = pid;			/* Сохраняем значение pid */
-		if (pid == 0) { 		/* Дочерний процесс */
+		ex->pid = fork();
+		if (ex->pid == 0) { 		/* Дочерний процесс */
 			switch_io(ex);
 			if (bit_seted(ex->mode,RUN_BACKGR)) set_int_ignore();
 			else set_int_dfl();
@@ -200,28 +197,14 @@ int exec (sing_exec *ex)
 			}
 		}
 		else {					/* Родитель (оболочка) */ 
-			/*printf("NEW PROCESS PID -> %d\n",pid);*/
 			current = *ex;		/* Установка текущего процесса */
 			if (bit_seted(ex->mode,RUN_BACKGR)) {
-				add_bg_job(ex->name,pid,shell_pid);
-				/*printf("In backgr PID %d 	PPID %d\n",pid,shell_pid);*/
-			} else { /* Нужно ожидать завершения всех фоновых процессов смотри man 2 waitpid */
+				add_bg_job(ex,TSK_RUNNING);
+				printf("+1 background -> %d\n", ex->pid );
+				current.pid = 0;	/* Фоновый процесс не является текущим */
+			} else { 
 				/* Ожидаем завершение выполнения текущего процесса */
-				ch_pid = waitpid(pid,&child_stat,WUNTRACED | WCONTINUED);
-				if(ch_pid == -1) {
-					perror("waitpid: ");
-				}
-				/* if (WTERMSIG(stat) == SIGHUP) exec(ex); Нужно проверять свободен ли терминал в момент вывода */
-				if (WIFSIGNALED (child_stat))						/* Либо перенаправить ввод-вывод в временный файл */
-					printf ("%s: process %d killed by signal :> %s%s\n", shell_name, pid,
-						sys_siglist[WTERMSIG (child_stat)],
-						(WCOREDUMP(child_stat)) ? " (dumped core)" : "");
-
-				if (WIFSTOPPED (child_stat)) {			/* Процесс был остановлен */
-					add_bg_job(ex->name,pid,shell_pid);
-					printf ("%s: process %d stoped by signal :> %s\n", shell_name, pid,
-					sys_siglist[WSTOPSIG (child_stat)]);
-				}
+				wait_child(ex);
 			}
 		}
 	}
@@ -232,6 +215,30 @@ int exec (sing_exec *ex)
 	return (WIFEXITED(stat)) ? WEXITSTATUS(stat) : -1;
 }
 
+
+int wait_child(sing_exec *ex)
+{
+	int child_stat;
+
+	pid_t ch_pid = waitpid(ex->pid,&child_stat,WUNTRACED | WCONTINUED);
+	
+	if(ch_pid == -1) {
+		perror("waitpid: ");
+	}
+	/* if (WTERMSIG(stat) == SIGHUP) exec(ex); Нужно проверять свободен ли терминал в момент вывода */
+	if (WIFSIGNALED (child_stat))						/* Либо перенаправить ввод-вывод в временный файл */
+		printf ("%s: process %d killed by signal :> %s%s\n", shell_name, ex->pid,
+			sys_siglist[WTERMSIG (child_stat)],
+			(WCOREDUMP(child_stat)) ? " (dumped core)" : "");
+
+	if (WIFSTOPPED (child_stat)) {			/* Процесс был остановлен */
+		add_bg_job(ex,TSK_STOPPED);
+		printf ("%s: process %d stoped by signal :> %s\n", shell_name, ex->pid,
+		sys_siglist[WSTOPSIG (child_stat)]);
+	}
+
+	return child_stat;
+}
  
 int find_spec(int i, list_id lid)
 {
@@ -320,6 +327,8 @@ void init_jobs()
 	add_job("meow",meow_handl);
 	add_job("declare",declare_handl)
 	add_job("kill",kill_handl);
+	add_job("jobs",jobs_handl);
+	add_job("fg",fg_handl);
 }
 
 void del_jobs()
