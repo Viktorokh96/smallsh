@@ -220,17 +220,17 @@ int wait_child(sing_exec *ex)
 {
 	int child_stat;
 
-	pid_t ch_pid = waitpid(ex->pid,&child_stat,WUNTRACED);
+	waitpid(ex->pid,&child_stat,WUNTRACED);
 	
-	if(ch_pid == -1) {
+	/*if(ch_pid == -1) {
 		perror("waitpid: ");
-	}
+	} */
 	/* if (WTERMSIG(stat) == SIGHUP) exec(ex); Нужно проверять свободен ли терминал в момент вывода */
-	if (WIFSIGNALED (child_stat))						/* Либо перенаправить ввод-вывод в временный файл */
+	/*if (WIFSIGNALED (child_stat))				
 		printf ("%s: process %d \t %s \t killed by signal :> %s%s\n", shell_name, ex->pid,
 			ex->name,sys_siglist[WTERMSIG (child_stat)],
 			(WCOREDUMP(child_stat)) ? " (dumped core)" : "");
-
+	*/
 	if (WIFSTOPPED (child_stat)) {			/* Процесс был остановлен */
 		add_bg_job(ex,TSK_STOPPED);
 		printf ("\n%s: process %d \t %s \tstoped by signal :> %s\n", shell_name, ex->pid,

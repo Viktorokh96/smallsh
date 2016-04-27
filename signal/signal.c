@@ -5,49 +5,51 @@
 #include "../jobs/jobs.h"
 #include "../general.h"
 
-void show_stoped_job()
-{
-	printf("\n");
-}
 
-/* Определение функции обработчика */
-void sig_handler(int sig)
-{
-	if (sig == SIGINT) {
-		if (getpid() != 0) {
-			fflush(stdout);
-		}
-	}
+#define _SIGSET_T	__sigset_t
 
-	if ( sig == SIGCHLD ) {
-		waitpid(-1,NULL,WNOHANG);				/* Обрабатываем скелет завершившегося процесса */
-	}
+/* Установка обработчика сигнала 
+#define	set_sig_act(signo,hand,mask,flags)	\
+	do {									\
+		sig_act.sa_handler = (hand);		\
+		sig_act.sa_mask = (_SIGSET_T)(mask);\
+		sig_act.sa_flags = (flags);			\
+		sigaction ((signo),&sig_act,NULL);	\
+	} while(0);		*/
 
-	return;
-}
+void set_sig_act(int signo, __sighandler_t hand, int flags)
+{									
+	struct sigaction sig_act;			
+	sig_act.sa_handler = hand;		
+	sig_act.sa_flags = flags;			
+	sigaction (signo,&sig_act,NULL);	
+}								
 
 /* 	Игнорирование и установка по умолчанию
 	сигналов наследуется между ветвелниями 
 	и вызовами exec. Это полезно! */
 void set_int_ignore() 
 {
-	signal (SIGINT, SIG_IGN);
-	signal (SIGQUIT, SIG_IGN);
-	signal (SIGTSTP, SIG_IGN);
+	set_sig_act(SIGINT,SIG_IGN,0);
+	set_sig_act(SIGQUIT,SIG_IGN,0);
+	set_sig_act(SIGTSTP,SIG_IGN,0);	
+	set_sig_act(SIGQUIT,SIG_IGN,0);
 }
+
 
 void set_int_dfl()
 {
-	signal (SIGQUIT, SIG_DFL);
-	signal (SIGINT, SIG_DFL);
-	signal (SIGTSTP, SIG_DFL);
+	set_sig_act(SIGQUIT,SIG_DFL,0);
+	set_sig_act(SIGTSTP,SIG_DFL,0);	
+	set_sig_act(SIGINT,SIG_DFL,0);
 }
+
 
 int init_signals()
 {
-	signal(SIGINT,&sig_handler);
-	signal(SIGTSTP,SIG_IGN);
-	signal(SIGCHLD,&sig_handler);
+	set_sig_act(SIGINT,SIG_IGN,0);
+	set_sig_act(SIGTSTP,SIG_IGN,0);
+	set_sig_act(SIGCHLD,SIG_IGN,0);
 
 	return 0;
 }

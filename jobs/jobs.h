@@ -68,21 +68,7 @@
 				job_sh.name = (n); 		\
 				job_sh.handler = &(h); 	\
 				list_add(&job_sh,sizeof(job),sh_jobs);
-
-	/*#define add_bg_job(proc,stat)								\
-				do {											\
-					list *tmp;									\
-					int exist = 0;								\
-					list_for_each(tmp,get_head(bg_jobs)) {		\
-						if(((sing_exec*) list_entry(tmp))->pid 	\
-							== (proc)->pid) exist = 1;			\
-					}											\
-					if(!exist) {								\
-						(proc)->status = stat;					\
-						list_add(proc,sizeof(sing_exec),bg_jobs); 	\
-					}											\
-				} while(0); */
-
+				
 	#define add_bg_job(proc,stat)								\
 					do {										\
 						(proc)->status = stat;					\

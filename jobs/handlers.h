@@ -68,6 +68,8 @@ int jobs_handl(void *prm)
 	sing_exec *tsk;
 	int  i = 1;
 
+	update_jobs();
+
 	list_for_each(tmp,get_head(bg_jobs)) {
 			tsk = (sing_exec*) list_entry(tmp);
 			printf("[%d] %s\t\t%s\n",i++,(tsk->status == TSK_RUNNING)? 
@@ -86,6 +88,7 @@ int fg_handl(void *prm)
 			tsk = (sing_exec *) malloc(sizeof(sing_exec));
 			memcpy(tsk,(sing_exec*) list_entry(tmp),sizeof(sing_exec));
 			//if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
+			current = *tsk;
 				kill(tsk->pid, SIGCONT);
 			wait_child(tsk);
 			list_del_elem(tmp,bg_jobs);
@@ -132,7 +135,6 @@ int kill_handl(void *prm)
 		}
 	}
 
-	update_jobs();
 
 	return 0;
 }
