@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "signal.h"
 #include "../jobs/jobs.h"
+#include "../general.h"
 
 void show_stoped_job()
 {
@@ -19,7 +20,8 @@ void sig_handler(int sig)
 
 	if (sig == SIGTSTP) {
 		if (getpid() != 0) {
-
+			kill (current.pid,SIGTSTP);
+			printf("stop %d\n",current.pid);
 		}
 	}
 
@@ -38,9 +40,16 @@ void set_int_ignore()
 	signal (SIGQUIT, SIG_IGN);
 }
 
+void set_int_dfl()
+{
+	signal (SIGTSTP, SIG_DFL);
+	signal (SIGSTOP, SIG_DFL);
+}
+
 int init_signals()
 {
 	signal(SIGINT,&sig_handler);
+	signal(SIGTSTP,&sig_handler);
 	signal(SIGCHLD,&sig_handler);
 
 	return 0;

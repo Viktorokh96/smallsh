@@ -6,6 +6,8 @@
 
 	void set_int_ignore();
 
+	void set_int_dfl();
+
 	int init_signals();
 
 #endif

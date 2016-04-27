@@ -4,6 +4,7 @@
 	#include <stdlib.h>
 	#include "./services/list.h"
 	#include "./defines.h"
+	#include "./jobs/jobs.h"
 	#include <sys/types.h>
 	#include <pwd.h> 	
 
@@ -17,6 +18,9 @@
 
 	/* Имя пользователя */
 	char *user_name;
+
+	/* Текущий исполняющийся процесс */
+	sing_exec current;
 
 	/* Предыдущая директория */
 	list_id path_list;

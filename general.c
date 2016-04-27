@@ -17,7 +17,7 @@ int init_general()
 	list_add(curr_path,strlen(curr_path)+1,path_list);
 	shell_pid = getpid();
 	home_path = getenv("HOME");
-	user_name = getpwuid(geteuid())->pw_name;
+	user_name = getpwuid(geteuid())->pw_name;				/* Получаем имя пользователя */
 
 	return 0;
 }
