@@ -116,27 +116,32 @@ int kill_handl(void *prm)
 	sing_exec *tsk;
 	pid_t pid;
 	int i, num = 0;
+	struct queue kill_q;
 	char **argv = (char **) prm;
+
+	init_queue(&kill_q);
 
 	for (i = 0; argv[i] != NULL; i++)
 		if (*argv[i] == '%') {
 			num = atoi(argv[i]+1);
-			break;
+			add_to_queue(num,&kill_q);
 		}
 
-	if(num != 0) {
-		if(num > 0 && num <= list_count(bg_jobs)) 
-			tsk = (sing_exec *) list_get(num-1,bg_jobs);
-		else {
-			printf("Недопустимый номер! %d\n", num );
-			return 1;
+	if(!queue_empty(kill_q)) {
+		while((num = get_from_queue(&kill_q)) != EMPTY_Q) {
+			if(num > 0 && num <= list_count(bg_jobs)) 
+				tsk = (sing_exec *) list_get(num-1,bg_jobs);
+			else {
+				printf("Недопустимый номер! %d\n", num );
+				return 1;
+			}
+			if (tsk->status == TSK_STOPPED)
+				kill(tsk->pid,SIGCONT);
+				kill(tsk->pid,SIGKILL);
+			printf("Killed -> %d 	%s\n",
+				tsk->pid, tsk->name);
+			tsk->status = TSK_KILLED;
 		}
-		if (tsk->status == TSK_STOPPED)
-			kill(tsk->pid,SIGCONT);
-			kill(tsk->pid,SIGKILL);
-		printf("Killed -> %d 	%s\n",
-			tsk->pid, tsk->name);
-		tsk->status = TSK_KILLED;
 	} else {
 		/* Выполнение внешней функции */
 		sing_exec *ex = (sing_exec *) malloc(sizeof(sing_exec));

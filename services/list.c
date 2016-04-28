@@ -184,3 +184,40 @@ void list_connect(unsigned num1, unsigned num2, list_id lid)
 
 	return &list_head(lid);
 }
+
+/* Реализация очереди */
+
+void init_queue(struct queue *q)
+{
+	q->prod = q->cons = 0;
+	q->next = &queue_next;
+}
+ 
+int queue_next (int p)
+{
+	if (p < Q_LENG-1) return p+1;
+	else return 0;
+}
+
+
+int queue_empty(struct queue q)
+{
+	return (q.prod == q.cons);
+}
+
+/* Добавление специального исмвола в очередь */
+void add_to_queue(int val, struct queue *q)
+{
+	if(q->next(q->prod) == q->cons) return;	/* Очередь полна */
+	q->queue[q->prod] = val;
+	q->prod = q->next(q->prod);
+}
+
+/* Добавление значения в очередь */
+int get_from_queue(struct queue *q)
+{
+	if(q->prod == q->cons) return EMPTY_Q;
+	int tmp = q->queue[q->cons];
+	q->cons = q->next(q->cons);
+	return tmp;
+}

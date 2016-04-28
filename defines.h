@@ -4,7 +4,7 @@
 /* Размер строки выделенную под команды */
 #define CMD_SIZE	256
 #define STR_SIZE	128
-#define SPEC_LENG	128			
+#define Q_LENG		128			
 
 /* Возможные специальные условия выполнения */
 #define NO_SPEC		0x0000

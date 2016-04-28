@@ -8,26 +8,6 @@
 
 #define is_same(l,s)	(!compare_str((char *) list_entry((l)), s))
 
- 
-int queue_next (int p)
-{
-	if (p < SPEC_LENG-1) return p+1;
-	else return 0;
-}
-
-struct special_queue {	/* Очередь специальных символов (в виде колцевого буфера) */
-	int queue[SPEC_LENG];
-	int prod;			/* Указатель на новую позицию для добавления в очередь */
-	int cons;			/* Указатель на позицию для следующего чтения из очереди */
-	int (*next)(int p);	/* Метод, возвращающий следущий элемент */
-} sp_queue;
-
-
-int no_spec()
-{
-	return (sp_queue.prod == sp_queue.cons);
-}
-
 void free_exec(sing_exec *ex)
 {
 	int i;
@@ -42,22 +22,6 @@ void free_exec(sing_exec *ex)
 	}
 }
 
-/* Добавление специального исмвола в очередь */
-void add_spec(int val)
-{
-	if(sp_queue.next(sp_queue.prod) == sp_queue.cons) return;	/* Очередь полна */
-	sp_queue.queue[sp_queue.prod] = val;
-	sp_queue.prod = sp_queue.next(sp_queue.prod);
-}
-
-/* Взятие специального символа из очереди */
-int get_spec()
-{
-	if(sp_queue.prod == sp_queue.cons) return NO_SPEC;
-	int tmp = sp_queue.queue[sp_queue.cons];
-	sp_queue.cons = sp_queue.next(sp_queue.cons);
-	return tmp;
-}
 
 /* Подготавливаем аргументы */
 void *prepare_args(int num, sing_exec *ex, unsigned mode, list_id lid)
@@ -154,12 +118,13 @@ void exec_next(sing_exec *ex, int stat)
 {
 	int spec;
 	if (ex->next != NULL) {
-		spec = get_spec();
-		if(spec == NO_SPEC) { exec(ex->next); return; }
-		if (((stat == 0) && (spec == SPEC_AND)) ||
-			((stat != 0) && (spec == SPEC_OR)))
-			exec(ex->next);
-			else free_exec(ex->next);	/* Освобождаем ненужные элементы */ 
+		if((spec = get_from_queue(&sp_queue)) != EMPTY_Q) {
+			if(spec == NO_SPEC) { exec(ex->next); return; }
+			if (((stat == 0) && (spec == SPEC_AND)) ||
+				((stat != 0) && (spec == SPEC_OR)))
+				exec(ex->next);
+				else free_exec(ex->next);	/* Освобождаем ненужные элементы */ 
+		}
 	}
 }
 
@@ -285,8 +250,8 @@ sing_exec *create_exec_queue()
 
 	/* Первое прохождение */
 	list_for_each(tmp, get_head(arg_list)) {
-		if (is_same(tmp,"&&")) add_spec(SPEC_AND);
-		if (is_same(tmp,"||")) add_spec(SPEC_OR);
+		if (is_same(tmp,"&&")) add_to_queue(SPEC_AND,&sp_queue);
+		if (is_same(tmp,"||")) add_to_queue(SPEC_OR,&sp_queue);
 	}
 
 	/* Образование самого первого процесса в очереди процессов */
@@ -299,7 +264,7 @@ sing_exec *create_exec_queue()
 	ex->handler = is_shell_cmd(ex->name);			/* Проверяем, встроена ли функция в оболочку */
 	ex -> next = NULL;
 
-	if(!no_spec()) {	/* Учавствует более одного процесса */
+	if(!queue_empty(sp_queue)) {	/* Учавствует более одного процесса */
 		past = ex;
 		i = 0;
 		while((i = find_spec(i,arg_list))) {
@@ -333,8 +298,7 @@ int (* is_shell_cmd(char *cmd)) (void *)
 /* Инициализация встроенных обработчиков */
 void init_jobs()
 {
-	sp_queue.prod = sp_queue.cons = 0;
-	sp_queue.next = &queue_next;
+	init_queue(&sp_queue);
 
 	sh_jobs = init_list();
 	bg_jobs = init_list();

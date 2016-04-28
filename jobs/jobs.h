@@ -32,6 +32,8 @@
 	/* Список программ выполняющихся в фоновом режиме */
 	list_id bg_jobs;
 
+	struct queue sp_queue;
+
 	void init_jobs();
 	
 	void del_jobs();

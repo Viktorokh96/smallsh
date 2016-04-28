@@ -3,11 +3,22 @@
 #include <malloc.h>
 #include <string.h>
 #include "bits.h"			/* Для работы с битами */
+#include "../defines.h"
+
+#define EMPTY_Q		(-1)
 
 typedef struct  list_head { /* Заголовок элемента */
 	struct list_head *mnext;
 	unsigned msize;			/* Размер содержимого */
 } list;
+
+struct queue {	/* Очередь специальных символов (в виде колцевого буфера) */
+	int queue[Q_LENG];
+	int prod;			/* Указатель на новую позицию для добавления в очередь */
+	int cons;			/* Указатель на позицию для следующего чтения из очереди */
+	int (*next)(int p);	/* Метод, возвращающий следущий элемент */
+};
+
 
 /* Индетификатор однонаправленного циклического списка */ 
 typedef unsigned int list_id;
@@ -65,5 +76,18 @@ list *list_add_tail (void *cont, size_t size, list_id lid);
 
 /* Удалить конкретный элемент */
 void list_del_elem(list *lp, list_id lid);
+
+/* Реализация очереди */
+void init_queue(struct queue *q);
+
+int queue_next (int p);
+
+int queue_empty(struct queue q);
+
+/* Добавление значения в очередь */
+void add_to_queue(int val, struct queue *q);
+
+/* Взятие специального символа из очереди */
+int get_from_queue(struct queue *q);
 
 #endif
