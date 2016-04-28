@@ -64,16 +64,26 @@ int cd_handl(void *prm)
 
 int jobs_handl(void *prm)
 {
+	int i;
 	list *tmp;
 	sing_exec *tsk;
-	int  i = 1;
+	int show_pid = 0;
+	char **argv = (char **) prm;
 
 	update_jobs();
 
+	for(i = 0; argv[i] != NULL; i++) 
+		if(!compare_str(argv[i],"-i")) show_pid = 1;
+	
+	i = 1;
 	list_for_each(tmp,get_head(bg_jobs)) {
-			tsk = (sing_exec*) list_entry(tmp);
-			printf("[%d] %s\t\t%s\n",i++,(tsk->status == TSK_RUNNING)? 
-				"Running" : "Stopped",tsk->name);
+		tsk = (sing_exec*) list_entry(tmp);
+		printf("[%d]%c %s\t\t%s",i,(i == 1) ? '+' : '-', 
+			(tsk->status == TSK_RUNNING)? 
+			"Running" : "Stopped",tsk->name);
+		if(show_pid) printf("\t\tPID: %d", tsk->pid);
+		printf("\n");
+		i++;	
 	}
 
 	return 0;
@@ -105,36 +115,58 @@ int kill_handl(void *prm)
 	list *tmp;
 	sing_exec *tsk;
 	pid_t pid;
-	int i = 1;
+	int i, num = 0;
 	char **argv = (char **) prm;
 
+	for (i = 0; argv[i] != NULL; i++)
+		if (*argv[i] == '%') {
+			num = atoi(argv[i]+1);
+			break;
+		}
 
-	/* Выполнение внешней функции */
-	sing_exec *ex = (sing_exec *) malloc(sizeof(sing_exec));
-	ex->name = strdup(argv[0]);
-	ex->mode = 0;
-	ex->file = NULL;
-	ex->argv = argv;
-	ex->next = NULL;
-	
-	exec(ex);
+	if(num != 0) {
+		if(num > 0 && num <= list_count(bg_jobs)) 
+			tsk = (sing_exec *) list_get(num-1,bg_jobs);
+		else {
+			printf("Недопустимый номер! %d\n", num );
+			return 1;
+		}
+		if (tsk->status == TSK_STOPPED)
+			kill(tsk->pid,SIGCONT);
+			kill(tsk->pid,SIGKILL);
+		printf("Killed -> %d 	%s\n",
+			tsk->pid, tsk->name);
+		tsk->status = TSK_KILLED;
+	} else {
+		/* Выполнение внешней функции */
+		sing_exec *ex = (sing_exec *) malloc(sizeof(sing_exec));
+		ex->name = strdup(argv[0]);
+		ex->mode = 0;
+		ex->file = NULL;
+		ex->argv = argv;
+		ex->next = NULL;
+		
+		exec(ex);		
 
-	while (*argv[i] == '-') i++;
-	for(; argv[i] != NULL; i++) {
-		pid = atoi(argv[i]);
-		list_for_each(tmp,get_head(bg_jobs)) {
-			tsk = (sing_exec*) list_entry(tmp);
-			if(tsk->pid == pid) {
-				if (tsk->status == TSK_STOPPED)
-					kill(tsk->pid,SIGCONT);
-				waitpid(pid,NULL,WNOHANG);
-				printf("Killed -> %d 	%s\n",
-					pid, tsk->name);
-				tsk->status = TSK_KILLED;
+		i = 1;
+		while (*argv[i] == '-') i++;
+		for(; argv[i] != NULL; i++) {
+			pid = atoi(argv[i]);
+			list_for_each(tmp,get_head(bg_jobs)) {
+				tsk = (sing_exec*) list_entry(tmp);
+				if(tsk->pid == pid) {
+					if (tsk->status == TSK_STOPPED)
+						kill(tsk->pid,SIGCONT);
+					waitpid(pid,NULL,WNOHANG);
+					printf("Killed -> %d 	%s\n",
+						tsk->pid, tsk->name);
+					tsk->status = TSK_KILLED;
+				}
 			}
 		}
 	}
 
+	update_jobs();
 
 	return 0;
 }

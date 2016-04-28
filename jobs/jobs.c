@@ -188,8 +188,9 @@ int exec (sing_exec *ex)
 		ex->pid = fork();
 		if (ex->pid == 0) { 		/* Дочерний процесс */
 			switch_io(ex);
-			if (bit_seted(ex->mode,RUN_BACKGR)) set_int_ignore();
-			else set_int_dfl();
+			/*if (bit_seted(ex->mode,RUN_BACKGR)) 
+			else set_int_dfl(); */
+			set_int_ignore();
 			if((stat = try_exec(getenv("PATH"),ex)) != 0) 
 			if((stat = try_exec(getenv("PWD"),ex)) != 0) {
 				printf("%s: %s <- исполняемый файл не найден.\n",shell_name,ex->name);
