@@ -8,7 +8,7 @@ LIBS =
 # Направление поиска для make
 vpath %.c ./services ./parses ./jobs ./signal
 # Установка флагов для компиляции объектных файлов
-FLAGS = -Wall -c -g -std=gnu99 $(INCLUDE)
+FLAGS = -Wall -Wno-deprecated-declarations -c -g -std=gnu99 $(INCLUDE)
 # Установка флагов для линковщика
 LDFLAGS = $(LIBS)
 # Исходные файлы проекта
@@ -28,7 +28,7 @@ SIGNALOBJ = $(patsubst %.c,%.o,$(SIGNALSRC))
 
 ALLOBJ	= $(SIGNALOBJ) $(GENERALOBJ) $(JOBSOBJ) $(LISTOBJ) $(PARSEOBJ) $(MAINOBJ)
 
-HOMEPATH = $(HOME)/bin/
+HOMEPATH = $(HOME)/bin
 
 EXE := smallsh
 
@@ -36,7 +36,7 @@ all: $(EXE)
 
 $(EXE) : $(ALLOBJ)
 		$(CC) $^ $(LDFLAGS) -o $@
-		cp $@ $(HOMEPATH)
+		cp $@ $(HOMEPATH) || cp $@ /usr/bin || cp $@ /usr/local/bin
 
 $(MAINOBJ) : $(MAINSOURCE)
 		$(CC) $(FLAGS) $^ $(CFLAGS) -o $@

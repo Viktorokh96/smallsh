@@ -6,6 +6,28 @@
 	#include "../services/list.h"
 	#include "../defines.h"
 
+	#if defined  _SVID_SOURCE || _BSD_SOURCE || _XOPEN_SOURCE >= 500 \
+	|| _XOPEN_SOURCE && _XOPEN_SOURCE_EXTENDED ||  _POSIX_C_SOURCE >= 200809L
+		#define _STR_DUP(s)		strdup((s))
+	#elif defined  _POSIX_C_SOURCE >= 200809L || _XOPEN_SOURCE >= 700
+		#define _STR_DUP(s)		strndup((s),strlen(s)+1)
+	#elif _GNU_SOURCE
+		#define _STR_DUP(s)		strndupa((s))
+	#endif
+
+	#ifdef __USE_GNU 
+		#define _ENVIRON	environ
+	#else
+		#define _ENVIRON	__environ
+	#endif 
+
+	#if defined  _BSD_SOURCE &&	\
+        !(_POSIX_SOURCE || _POSIX_C_SOURCE || _XOPEN_SOURCE ||	\
+        _XOPEN_SOURCE_EXTENDED || _GNU_SOURCE || _SVID_SOURCE)	
+        #define _SETPGID(pid,pgid)		setpgrp((pid),(pgid))
+	#else	
+		#define _SETPGID(pid,pgid)		setpgid((pid),(pgid))
+	#endif
 
 	typedef struct job_st {
 		char *name;					/* Имя команды */
@@ -51,7 +73,7 @@
 	void *prepare_args(int num, sing_exec *ex, unsigned mode, list_id list);
 
 	/* Запуск команды */
-	int exec (sing_exec *ex);
+	int exec_cmd (sing_exec *ex);
 
 	/* Ожидание дочернего процесса */
 	int wait_child(sing_exec *ex);

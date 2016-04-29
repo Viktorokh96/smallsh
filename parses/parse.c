@@ -24,15 +24,15 @@ char *parse_cmd(char *cmd)
 			if (*p == ';') return p+1;
 			q = p;
 			/* Выделяем путь к исполняемому файлу */
-			select_word(q);
+			select_word(q);		/* Выделяется лексема, разделённая пробелами */
 			if (*q == ';') {
 				*q = 0;
-				tmp = strdup(p);
+				tmp = _STR_DUP(p);
 				list_add_tail(tmp,strlen(tmp)+1,arg_list);	
 				return q + 1;
 			}
 			*q = 0;
-			tmp = strdup(p);
+			tmp = _STR_DUP(p);
 			list_add_tail(tmp,strlen(tmp)+1,arg_list);
 			if(*(q+1)) p = q+1;
 			else p = q;
@@ -42,7 +42,7 @@ char *parse_cmd(char *cmd)
 }
 
 /* Функция, разбивающая строку на пути поиска исполняемых файлов */
-char *make_exec_path(char **path, char *execf)
+char *find_exec(char **path, char *execf)
 {
 	char *p = *path;
 	char *q = p;
@@ -51,7 +51,7 @@ char *make_exec_path(char **path, char *execf)
 
 	select_path(q);
 	*q = '\0'; q++;
-	*path = strdup(p);		/* Теперь работает с независимой копией */
+	*path = _STR_DUP(p);		/* Теперь работает с независимой копией */
 	strncat(*path, DIR_SEP, 1);
 	strncat(*path, execf, strlen(execf));
 	return q;
@@ -76,7 +76,7 @@ int compare_str(char *str1, char *str2)
 
 char *short_path(char *path)
 {
-	char *buf = strdup(path);
+	char *buf = _STR_DUP(path);
 	char *p = buf, *q = home_path;
 	for (;(*p == *q) && (*q); p++, q++);
 	if (!(*q)) { 

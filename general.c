@@ -11,7 +11,7 @@ int init_general()
     || defined __USE_BSD
 	curr_path = malloc(sizeof(char)*PATHSIZE);
 	getwd (curr_path);
-#else
+//#else
 	getcwd (curr_path,PATHSIZE);
 #endif
 	list_add(curr_path,strlen(curr_path)+1,path_list);

@@ -116,57 +116,47 @@ int kill_handl(void *prm)
 	sing_exec *tsk;
 	pid_t pid;
 	int i, num = 0;
-	struct queue kill_q;
+	char pidbuff[10];
 	char **argv = (char **) prm;
-
-	init_queue(&kill_q);
 
 	for (i = 0; argv[i] != NULL; i++)
 		if (*argv[i] == '%') {
 			num = atoi(argv[i]+1);
-			add_to_queue(num,&kill_q);
-		}
-
-	if(!queue_empty(kill_q)) {
-		while((num = get_from_queue(&kill_q)) != EMPTY_Q) {
+			/* add_to_queue(num,&kill_q); */
 			if(num > 0 && num <= list_count(bg_jobs)) 
 				tsk = (sing_exec *) list_get(num-1,bg_jobs);
 			else {
-				printf("Недопустимый номер! %d\n", num );
+				printf("Такой задачи нет %d\n", num );
 				return 1;
 			}
+			free (argv[i]);
+			sprintf(pidbuff,"%d",tsk->pid);
+			argv[i] = _STR_DUP(pidbuff);
 			if (tsk->status == TSK_STOPPED)
 				kill(tsk->pid,SIGCONT);
-			kill(tsk->pid,SIGINT);
-			printf("Killed -> %d 	%s\n",
-				tsk->pid, tsk->name);
-			tsk->status = TSK_KILLED;
 		}
-	} else {
-		/* Выполнение внешней функции */
-		sing_exec *ex = (sing_exec *) malloc(sizeof(sing_exec));
-		ex->name = strdup(argv[0]);
-		ex->mode = 0;
-		ex->file = NULL;
-		ex->argv = argv;
-		ex->next = NULL;
-		
-		exec(ex);		
 
-		i = 1;
-		while (*argv[i] == '-') i++;
-		for(; argv[i] != NULL; i++) {
-			pid = atoi(argv[i]);
-			list_for_each(tmp,get_head(bg_jobs)) {
-				tsk = (sing_exec*) list_entry(tmp);
-				if(tsk->pid == pid) {
-					if (tsk->status == TSK_STOPPED)
-						kill(tsk->pid,SIGCONT);
-					waitpid(pid,NULL,WNOHANG);
-					printf("Killed -> %d 	%s\n",
-						tsk->pid, tsk->name);
-					tsk->status = TSK_KILLED;
-				}
+	/* Выполнение внешней функции */
+	sing_exec *ex = (sing_exec *) malloc(sizeof(sing_exec));
+	ex->name = strdup(argv[0]);
+	ex->mode = 0;
+	ex->file = NULL;
+	ex->argv = argv;
+	ex->next = NULL;
+	
+	exec_cmd(ex);		
+
+	i = 1;
+	while (*argv[i] == '-') i++;
+	for(; argv[i] != NULL; i++) {
+		pid = atoi(argv[i]);
+		list_for_each(tmp,get_head(bg_jobs)) {
+			tsk = (sing_exec*) list_entry(tmp);
+			if(tsk->pid == pid) {
+				if (tsk->status == TSK_STOPPED)
+					kill(tsk->pid,SIGCONT);
+				waitpid(pid,NULL,WNOHANG);
+				tsk->status = TSK_KILLED;
 			}
 		}
 	}
@@ -178,7 +168,7 @@ int kill_handl(void *prm)
 
 int version_handl(void *prm)
 {
-	printf("Interpreter %s, version 0.001.\n",shell_name);
+	printf("Minimalistic interpreter %s, version 0.002.\n",shell_name);
 
 	return 0;
 }

@@ -8,6 +8,14 @@
 
 #define is_same(l,s)	(!compare_str((char *) list_entry((l)), s))
 
+/* Доходим до специального символа или конца списка */
+#define go_spec_symb(tmp,num,lid,size)	\
+			do {						\
+				for((tmp) = list_get_header((num),(lid)); (tmp) != get_head((lid)) &&  \
+					(!is_same((tmp),"&&")) && (!is_same((tmp),"||"));			 \
+					(tmp) = (tmp)->mnext) size++;								 \
+			} while(0)
+
 void free_exec(sing_exec *ex)
 {
 	int i;
@@ -36,9 +44,7 @@ void *prepare_args(int num, sing_exec *ex, unsigned mode, list_id lid)
 	switch(mode) {
 		case FOR_ARGS:
 			size = 1;
-			for(tmp = list_get_header(num,lid); tmp != get_head(lid) &&  
-				(!is_same(tmp,"&&")) && (!is_same(tmp,"||"));
-				tmp = tmp->mnext) size++;	/* Доходим до специального символа */
+			go_spec_symb(tmp,num,lid,size);
 			argv = malloc(size*sizeof(char *));
 			for (i = num; i < num+size-1; i++) {
 				strsize = strlen((char *)list_get(i,lid))+1;
@@ -53,20 +59,18 @@ void *prepare_args(int num, sing_exec *ex, unsigned mode, list_id lid)
 
 		case FOR_IO:
 			size = 1;
-			for(tmp = list_get_header(num,lid); tmp != get_head(lid) &&  
-				(!is_same(tmp,"&&")) && (!is_same(tmp,"||"));
-				tmp = tmp->mnext) size++;	/* Доходим до специального символа */
+			go_spec_symb(tmp,num,lid,size);
 			for (i = num; i < num+size-1; i++) {
 				if(!compare_str((char *)list_get(i,lid),"<") &&
 			 		list_get(i+1,lid) != NULL) {
-					filename = strdup((char *)list_get(i+1,lid));
+					filename = _STR_DUP((char *)list_get(i+1,lid));
 					list_connect(i-1,i+2,lid);		/* Избавляемся от этих аргументов */
 					set_bit(ex->mode,IO_IN);
 					return filename;
 				}
 				if(!compare_str((char *)list_get(i,lid),">") &&
 			 		list_get(i+1,lid) != NULL) {
-					filename = strdup((char *)list_get(i+1,lid));
+					filename = _STR_DUP((char *)list_get(i+1,lid));
 					list_connect(i-1,i+2,lid);		/* Избавляемся от этих аргументов */
 					set_bit(ex->mode,IO_OUT);
 					return filename;
@@ -76,9 +80,7 @@ void *prepare_args(int num, sing_exec *ex, unsigned mode, list_id lid)
 
 		case FOR_BACKGR:
 			size = 1;
-			for(tmp = list_get_header(num,lid); tmp != get_head(lid) &&  
-				(!is_same(tmp,"&&")) && (!is_same(tmp,"||"));
-				tmp = tmp->mnext) size++;	/* Доходим до специального символа */
+			go_spec_symb(tmp,num,lid,size);
 				for (i = num; i < num+size-1; i++) {
 					if(!compare_str((char *)list_get(i,lid),"&")) {
 						set_bit(ex->mode,RUN_BACKGR);
@@ -92,22 +94,18 @@ void *prepare_args(int num, sing_exec *ex, unsigned mode, list_id lid)
 	return NULL;
 }
 
+/* Попытка запуска исполняемого фаайла */
 int try_exec(char *path, sing_exec *ex) 
 {
 	int state = 0;
 	char *tmp;
-	char *exec_path = strdup(path);
+	char *exec_path = _STR_DUP(path);
 	
-	while((tmp = make_exec_path(&exec_path,
+	while((tmp = find_exec(&exec_path,
 		ex->name)) != NULL) {
 		if (exec_path == NULL) state = 1;
-	#ifdef __USE_GNU
-		if(!execve(exec_path,ex->argv,environ)) return 0;
+		if(!execve(exec_path,ex->argv,_ENVIRON)) return 0;
 		else state = 1;
-	#else
-		if(!execve(exec_path,ex->argv,__environ)) return 0;
-		else state = 1;
-	#endif
 		exec_path = tmp;
 	}
 	return state;
@@ -119,10 +117,13 @@ void exec_next(sing_exec *ex, int stat)
 	int spec;
 	if (ex->next != NULL) {
 		if((spec = get_from_queue(&sp_queue)) != EMPTY_Q) {
-			if(spec == NO_SPEC) { exec(ex->next); return; }
+			if(spec == NO_SPEC) { 
+				exec_cmd(ex->next); 
+				return; 
+			}
 			if (((stat == 0) && (spec == SPEC_AND)) ||
 				((stat != 0) && (spec == SPEC_OR)))
-				exec(ex->next);
+				exec_cmd(ex->next);
 				else free_exec(ex->next);	/* Освобождаем ненужные элементы */ 
 		}
 	}
@@ -141,7 +142,7 @@ void switch_io(sing_exec *ex)
 }
 
 /* Исполнение команды */
-int exec (sing_exec *ex)
+int exec_cmd (sing_exec *ex)
 {
 	int stat;
 
@@ -154,7 +155,7 @@ int exec (sing_exec *ex)
 		if (ex->pid == 0) { 		/* Дочерний процесс */
 			switch_io(ex);			/* Если требуется перенаправление в/в */
 			set_int_dfl();			/* Установка обработчиков сигналов */
-			setpgid(ex->pid,0);		/* Создаём новую группу процессов (ВАЖНО) */
+			_SETPGID(ex->pid,0);	/* Создаём новую группу процессов (ВАЖНО) */
 			if((stat = try_exec(getenv("PATH"),ex)) != 0) 
 			if((stat = try_exec(getenv("PWD"),ex)) != 0) {
 				printf("%s: %s <- исполняемый файл не найден.\n",shell_name,ex->name);
@@ -187,15 +188,6 @@ int wait_child(sing_exec *ex)
 
 	waitpid(ex->pid,&child_stat,WUNTRACED);
 	
-	/*if(ch_pid == -1) {
-		perror("waitpid: ");
-	} */
-	/* if (WTERMSIG(stat) == SIGHUP) exec(ex); Нужно проверять свободен ли терминал в момент вывода */
-	/*if (WIFSIGNALED (child_stat))				
-		printf ("%s: process %d \t %s \t killed by signal :> %s%s\n", shell_name, ex->pid,
-			ex->name,sys_siglist[WTERMSIG (child_stat)],
-			(WCOREDUMP(child_stat)) ? " (dumped core)" : "");
-	*/
 	if (WIFSTOPPED (child_stat)) {			/* Процесс был остановлен */
 		add_bg_job(ex,TSK_STOPPED);
 		printf ("\n%s: process %d \t %s \tstoped by signal :> %s\n", shell_name, ex->pid,
@@ -215,8 +207,16 @@ void update_jobs()
 	tmp = next) { 
 		tsk = (sing_exec*) list_entry(tmp); 
 		if (tsk->status == TSK_KILLED) {
-			next = tmp->mnext;
-			list_del_elem(tmp,bg_jobs);
+			kill(tsk->pid,0);							/* Необходимо как минимум ещё 1 раз */
+			if(errno == ESRCH) {				 		/* удостовериться что процесс мёртв */
+				printf("Killed -> %d 	%s\n",	
+						tsk->pid, tsk->name);
+				next = tmp->mnext;
+				list_del_elem(tmp,bg_jobs);
+			} else {									/* Если процесс таки не завершился */
+				tsk->status = TSK_STOPPED;
+				next = tmp->mnext;
+			}	
 		} else {
 			next = tmp->mnext;
 		}
@@ -256,7 +256,7 @@ sing_exec *create_exec_queue()
 	/* Образование самого первого процесса в очереди процессов */
 	ex = (sing_exec *) malloc(sizeof(sing_exec));
 	ex->mode = 0;
-	ex->name = strdup((char *) list_get(0,arg_list));
+	ex->name = _STR_DUP((char *) list_get(0,arg_list));
 	prepare_args(0,ex,FOR_BACKGR,arg_list);
 	ex -> file = (char *) prepare_args(0, ex , FOR_IO ,arg_list);	
 	ex -> argv = (char **) prepare_args(0, ex , FOR_ARGS ,arg_list);
@@ -269,7 +269,7 @@ sing_exec *create_exec_queue()
 		while((i = find_spec(i,arg_list))) {
 			next = (sing_exec *) malloc(sizeof(sing_exec));
 			next -> mode = 0;
-			next ->	name = strdup((char *) list_get(i,arg_list));
+			next ->	name = _STR_DUP((char *) list_get(i,arg_list));
 			prepare_args(i,ex,FOR_BACKGR,arg_list);
 			next -> file = (char *)  prepare_args(i, ex , FOR_IO, arg_list);	
 			next -> argv = (char **) prepare_args(i, ex,  FOR_ARGS, arg_list);
