@@ -43,13 +43,6 @@ void sig_handler(int signo)
 /* 	Игнорирование и установка по умолчанию
 	сигналов наследуется между ветвелниями 
 	и вызовами exec. Это полезно! */
-void set_int_ignore() 
-{
-	set_sig_act(SIGINT,SIG_IGN,0,NULL);
-	set_sig_act(SIGQUIT,SIG_IGN,0,NULL);
-	set_sig_act(SIGTSTP,SIG_IGN,0,NULL);	
-}
-
 
 void set_int_dfl()
 {
