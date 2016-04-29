@@ -168,7 +168,7 @@ int kill_handl(void *prm)
 
 int version_handl(void *prm)
 {
-	printf("Minimalistic interpreter %s, version 0.002.\n",shell_name);
+	printf("Minimalistic interpreter %s, version 0.003.\n",shell_name);
 
 	return 0;
 }
