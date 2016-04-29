@@ -156,11 +156,14 @@ int exec_cmd (sing_exec *ex)
 			switch_io(ex);			/* Если требуется перенаправление в/в */
 			set_int_dfl();			/* Установка обработчиков сигналов */
 			_SETPGID(ex->pid,0);	/* Создаём новую группу процессов (ВАЖНО) */
-			if((stat = try_exec(getenv("PATH"),ex)) != 0) 
-			if((stat = try_exec(getenv("PWD"),ex)) != 0) {
+			if((stat = try_exec(getenv("PATH"),ex)) != 0) {
+				if( (*(ex->name) == '.')
+				&&	((stat = try_exec(getenv("PWD"),ex)) == 0)) {
+					_exit(stat);
+				}
 				printf("%s: %s <- исполняемый файл не найден.\n",shell_name,ex->name);
 				_exit(stat);
-			}
+			} 
 		}
 		else {						/* Родитель (оболочка) */ 
 			current = *ex;			/* Установка текущего процесса */
