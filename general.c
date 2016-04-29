@@ -15,7 +15,7 @@ int init_general()
 	getcwd (curr_path,PATHSIZE);
 #endif
 	list_add(curr_path,strlen(curr_path)+1,path_list);
-	shell_pid = getpid();
+	shell_pid = getpid();									/* Создание новой сессии */
 	home_path = getenv("HOME");
 	user_name = getpwuid(geteuid())->pw_name;				/* Получаем имя пользователя */
 	current.pid = 0;

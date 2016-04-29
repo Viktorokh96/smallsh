@@ -137,7 +137,7 @@ int kill_handl(void *prm)
 			}
 			if (tsk->status == TSK_STOPPED)
 				kill(tsk->pid,SIGCONT);
-				kill(tsk->pid,SIGKILL);
+			kill(tsk->pid,SIGINT);
 			printf("Killed -> %d 	%s\n",
 				tsk->pid, tsk->name);
 			tsk->status = TSK_KILLED;

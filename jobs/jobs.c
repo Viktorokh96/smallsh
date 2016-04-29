@@ -152,10 +152,9 @@ int exec (sing_exec *ex)
 	} else {
 		ex->pid = fork();
 		if (ex->pid == 0) { 		/* Дочерний процесс */
-			switch_io(ex);
-			/*if (bit_seted(ex->mode,RUN_BACKGR)) 
-			else set_int_dfl(); */
-			set_int_ignore();
+			switch_io(ex);			/* Если требуется перенаправление в/в */
+			set_int_dfl();			/* Установка обработчиков сигналов */
+			setpgid(ex->pid,0);		/* Создаём новую группу процессов (ВАЖНО) */
 			if((stat = try_exec(getenv("PATH"),ex)) != 0) 
 			if((stat = try_exec(getenv("PWD"),ex)) != 0) {
 				printf("%s: %s <- исполняемый файл не найден.\n",shell_name,ex->name);

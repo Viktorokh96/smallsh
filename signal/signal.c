@@ -8,21 +8,23 @@
 
 #define _SIGSET_T	__sigset_t
 
-void set_sig_act(int signo, __sighandler_t hand, int flags)
+void set_sig_act(int signo, __sighandler_t hand, int flags, _SIGSET_T *sigset)
 {									
 	struct sigaction sig_act;			
 	sig_act.sa_handler = hand;		
 	sig_act.sa_flags = flags;			
-	sigemptyset(&sig_act.sa_mask);
+	if(sigset != NULL) sig_act.sa_mask = *sigset;
+	else sigemptyset(&sig_act.sa_mask);
 	sigaction (signo,&sig_act,NULL);	
 }			
 
 void sig_handler(int signo)
 {
+
 	if (signo == SIGINT) {
 		fflush(stdout);
 		if(current.pid != 0 && current.pid != getpid()) {	
-			kill(current.pid,SIGKILL);						/* Не вижу иного выхода... :( */
+			kill(current.pid,SIGINT);
 			current.status = TSK_KILLED;
 		}
 		printf("\n");
@@ -31,7 +33,7 @@ void sig_handler(int signo)
 	if (signo == SIGTSTP) {
 		fflush(stdout);
 		if(current.pid != 0 && current.pid != getpid()) {	
-			kill(current.pid,SIGSTOP);						/* И здесь тоже... :( */
+			kill(current.pid,SIGTSTP);					
 			current.status = TSK_STOPPED;
 		}
 		printf("\n");
@@ -43,26 +45,31 @@ void sig_handler(int signo)
 	и вызовами exec. Это полезно! */
 void set_int_ignore() 
 {
-	set_sig_act(SIGINT,SIG_IGN,0);
-	set_sig_act(SIGQUIT,SIG_IGN,0);
-	set_sig_act(SIGTSTP,SIG_IGN,0);	
-	set_sig_act(SIGQUIT,SIG_IGN,0);
+	set_sig_act(SIGINT,SIG_IGN,0,NULL);
+	set_sig_act(SIGQUIT,SIG_IGN,0,NULL);
+	set_sig_act(SIGTSTP,SIG_IGN,0,NULL);	
 }
 
 
 void set_int_dfl()
 {
-	set_sig_act(SIGQUIT,SIG_DFL,0);
-	set_sig_act(SIGTSTP,SIG_DFL,0);	
-	set_sig_act(SIGINT,SIG_DFL,0);
+	set_sig_act(SIGQUIT,SIG_DFL,0,NULL);
+	set_sig_act(SIGTSTP,SIG_DFL,0,NULL);	
+	set_sig_act(SIGINT,SIG_DFL,0,NULL);
 }
 
 
 int init_signals()
 {
-	set_sig_act(SIGINT,&sig_handler,SA_RESTART);
-	set_sig_act(SIGTSTP,&sig_handler,SA_RESTART);
-	set_sig_act(SIGCHLD,SIG_IGN,0);
+	_SIGSET_T	sigset;
+	sigemptyset(&sigset);
+	sigaddset (&sigset, SIGINT);
+	sigaddset (&sigset, SIGTSTP);
+
+	set_sig_act(SIGINT,&sig_handler,SA_RESTART, &sigset );
+	set_sig_act(SIGTSTP,&sig_handler,SA_RESTART, &sigset);
+	set_sig_act(SIGCHLD,SIG_IGN,0, NULL);
+	set_sig_act(SIGQUIT,SIG_IGN,0, NULL);
 
 	return 0;
 }
