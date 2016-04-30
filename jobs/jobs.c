@@ -248,6 +248,7 @@ sing_exec *create_exec_queue()
 
 	int i = 0;
 
+	if (arg_list == UNINIT) return NULL;
 	if (list_empty(get_head(arg_list))) return NULL;
 
 	/* Первое прохождение */

@@ -60,12 +60,13 @@ void exec_command()
  
 char *get_command(char *cmd)
 {
-	char *q = cmd;
-get:q = fgets(q,CMD_SIZE,stdin);
+	char *p,*q = cmd;
+get:p = q = fgets(q,CMD_SIZE,stdin);
+	while(*p) if (*p++ == '#') {*(p-1) = '\0'; return cmd; }
     q += strlen(q)-1;
     for(;((q > cmd) && (*q != ESCAPING)); q--);
     if (*q == ESCAPING) {
-    	printf("->");	
+		printf("->");	
     	goto get; 											/* Хотите - ругайтесь, но выглядит */
     }														/* это достаточно элегантно. ИМХО */
 

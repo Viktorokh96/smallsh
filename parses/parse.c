@@ -13,9 +13,12 @@ char *parse_cmd(char *cmd)
 	char *tmp;
 	char *p,*q;
 
+
 	/* Удаляем старый список */
 	if (arg_list != UNINIT)	list_del(arg_list);
 
+	if(cmd == NULL) return NULL;
+	
 	arg_list = init_list();
 
 	for (p = q = cmd; (*p != '\n') && (*p != '\0');) {

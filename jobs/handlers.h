@@ -46,15 +46,7 @@ int cd_handl(void *prm)
 				}
 			}
 		}
-#ifdef	__USE_GNU
-		curr_path = get_current_dir_name (void);
-#endif
-#if (defined __USE_XOPEN_EXTENDED && !defined __USE_XOPEN2K8) \
-    || defined __USE_BSD
-		getwd (curr_path);
-#else
-		getcwd (curr_path,PATHSIZE);
-#endif
+	curr_path = get_curr_path(curr_path);
 	/* Установка нового значения в переменную окружения PWD */
 		setenv("PWD",curr_path,1);	
 	}
@@ -176,11 +168,8 @@ int version_handl(void *prm)
 int declare_handl(void *prm)
 {
 	int i;
-#ifdef __USE_GNU
-	for(i = 0; environ[i]; i++) printf("%s\n", environ[i]);
-#else
-	for(i = 0; __environ[i] ; i++) printf("%s\n", __environ[i]);
-#endif
+
+	for(i = 0; __environ[i] ; i++) printf("%s\n", _ENVIRON[i]);
 
 	return 0;
 }

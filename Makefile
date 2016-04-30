@@ -28,7 +28,7 @@ SIGNALOBJ = $(patsubst %.c,%.o,$(SIGNALSRC))
 
 ALLOBJ	= $(SIGNALOBJ) $(GENERALOBJ) $(JOBSOBJ) $(LISTOBJ) $(PARSEOBJ) $(MAINOBJ)
 
-HOMEPATH = $(HOME)/bin
+HOMEPATH = $(HOME)/bin/
 
 EXE := smallsh
 
