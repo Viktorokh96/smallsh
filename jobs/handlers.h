@@ -89,9 +89,9 @@ int fg_handl(void *prm)
 	list_for_each(tmp,get_head(bg_jobs)) {
 			tsk = (sing_exec *) malloc(sizeof(sing_exec));
 			memcpy(tsk,(sing_exec*) list_entry(tmp),sizeof(sing_exec));
-			//if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
-			current = *tsk;
+			if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
 				kill(tsk->pid, SIGCONT);
+			current = *tsk;
 			wait_child(tsk);
 			list_del_elem(tmp,bg_jobs);
 			free(tsk);

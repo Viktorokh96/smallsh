@@ -161,7 +161,7 @@ int exec_cmd (sing_exec *ex)
 				&&	((stat = try_exec(getenv("PWD"),ex)) == 0)) {
 					_exit(stat);
 				}
-				printf("%s: %s <- исполняемый файл не найден.\n",shell_name,ex->name);
+				printf("\n%s: %s <- исполняемый файл не найден.\n",shell_name,ex->name);
 				_exit(stat);
 			} 
 		}
@@ -209,20 +209,15 @@ void update_jobs()
 	tmp != get_head(bg_jobs);
 	tmp = next) { 
 		tsk = (sing_exec*) list_entry(tmp); 
-		if (tsk->status == TSK_KILLED) {
-			kill(tsk->pid,0);							/* Необходимо как минимум ещё 1 раз */
-			if(errno == ESRCH) {				 		/* удостовериться что процесс мёртв */
-				printf("Killed -> %d 	%s\n",	
-						tsk->pid, tsk->name);
-				next = tmp->mnext;
-				list_del_elem(tmp,bg_jobs);
-			} else {									/* Если процесс таки не завершился */
-				tsk->status = TSK_STOPPED;
-				next = tmp->mnext;
-			}	
-		} else {
+		kill(-(tsk->pid),0);						/* Необходимо как минимум ещё 1 раз */
+		if(errno == ESRCH) {				 		/* удостовериться что группа процессов мертва */
+			printf("Killed -> %d 	%s\n",
+					tsk->pid, tsk->name);
 			next = tmp->mnext;
-		}
+			list_del_elem(tmp,bg_jobs);
+		} else {									/* Если процесс таки не завершился */
+			next = tmp->mnext;
+		}	
 	}
 }
  
