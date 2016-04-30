@@ -6,9 +6,18 @@
 	#include "./defines.h"
 	#include "./jobs/jobs.h"
 	#include <sys/types.h>
-	#include <pwd.h> 	
+	#include <linux/limits.h>
 
-	#define PATHSIZE	256
+#ifdef	__USE_GNU
+	#define _GETWD(p)	get_current_dir_name (void);
+#elif (defined __USE_XOPEN_EXTENDED && !defined __USE_XOPEN2K8) \
+    || defined __USE_BSD
+	#define _GETWD(p)	getwd ((p));
+#else
+    #define _GETWD(p) 	getcwd ((p),PATH_MAX);
+#endif
+
+	#define PATHSIZE	64
 
 	/* Текущая директория */
 	char *curr_path;
@@ -33,6 +42,9 @@
 
 	/* Название оболочки */
 	char *shell_name;
+
+	/* Выделение памяти под путь */
+	char *path_alloc(unsigned char size, char* path);
 
 	/* Инициализация глобальных структур данных */
 	int init_general();

@@ -1,19 +1,37 @@
+#include <malloc.h>
+#include <errno.h>
+#include <pwd.h> 	
 #include "general.h"
+
+char *path_alloc(unsigned char size, char* path) 
+{
+	if (path != NULL) free(path);				/* Уничтожаем старую строку */
+	return (char *) malloc(PATHSIZE*size*sizeof(char));
+}
 
 int init_general() 
 {
+	static unsigned char n = 1;
+
 	path_list = init_list();
-	
-#ifdef	__USE_GNU
-	curr_path = get_current_dir_name (void);
-#endif
-#if (defined __USE_XOPEN_EXTENDED && !defined __USE_XOPEN2K8) \
-    || defined __USE_BSD
-	curr_path = malloc(sizeof(char)*PATHSIZE);
-	getwd (curr_path);
-//#else
-	getcwd (curr_path,PATHSIZE);
-#endif
+
+	curr_path = path_alloc(n,curr_path);
+	curr_path = _GETWD(curr_path);
+
+	while(curr_path == NULL) {					/* Проверка на ошибки */
+		switch(errno) {
+			case EFAULT:
+			case EINVAL: 
+					curr_path = path_alloc(n,curr_path);
+					curr_path = _GETWD(curr_path);
+				break;
+			case ERANGE: 
+					curr_path = path_alloc(++n,curr_path);
+					curr_path = _GETWD(curr_path);
+				break;
+		}
+	}
+
 	list_add(curr_path,strlen(curr_path)+1,path_list);
 	shell_pid = setsid();									/* Создание новой сессии */
 	home_path = getenv("HOME");
