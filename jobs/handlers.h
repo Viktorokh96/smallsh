@@ -39,6 +39,11 @@ int cd_handl(void *prm)
 					return 1;
 				}
 			}
+		} else {
+			if(chdir(full_path(home_path)) != 0) { 
+					printf("Такого каталога нет!\n");
+					return 1;
+				}
 		}
 	curr_path = get_curr_path(curr_path);
 	/* Установка нового значения в переменную окружения PWD */
