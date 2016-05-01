@@ -28,19 +28,13 @@ int cd_handl(void *prm)
 
 	if (argv != NULL) {
 		if (argv[1] != NULL) {
-			if (!compare_str(argv[1],"~")) {
-				if(chdir(home_path) != 0) { 
-					printf("Такого каталога нет!\n");
-					return 1;
-				}
-			}
-			else if (!compare_str(argv[1],"-b")) {
+			if (!compare_str(argv[1],"-b")) {
 				past = (char *) list_pop(path_list);
 				if(!list_empty(get_head(path_list))) chdir(past);
 			} 
 			else { 
 				list_add(curr_path,strlen(curr_path)+1,path_list);
-				if(chdir(argv[1]) != 0) { 
+				if(chdir(full_path(argv[1])) != 0) { 
 					printf("Такого каталога нет!\n");
 					return 1;
 				}

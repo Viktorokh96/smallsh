@@ -29,4 +29,6 @@ int compare_str(char *str1, char *str2);
 /* Обрезка полного пути для удобства */
 char *short_path(char *path);
 
+char *full_path(char *path);
+
 #endif

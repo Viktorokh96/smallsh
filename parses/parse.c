@@ -90,8 +90,27 @@ char *short_path(char *path)
 	char *p = buf, *q = home_path;
 	for (;(*p == *q) && (*q); p++, q++);
 	if (!(*q)) { 
-		*(--p) = '~';
+		*(--p) = CH_HOME;
 		return p;
 	}
 	else return path;
+}
+
+/* Трансофрмация входящего пути в полный путь */
+char *full_path(char *path)
+{
+	if(path == NULL) return NULL;
+	char *p = _STR_DUP(path);
+	char *full_path = p;
+
+	for (;(*p) && (*p != CH_HOME); p++);
+	if(*p) {								/* Если обнаружили значок домашнего */
+		p++;								/* каталога то дополняем его полным путем  */ 
+		char *q = _STR_DUP(home_path);
+		strncat(q,p,strlen(p));
+		full_path = q;
+		free(p-1);
+	}
+
+	return full_path;
 }
