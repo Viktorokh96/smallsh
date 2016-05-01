@@ -24,16 +24,23 @@ char *parse_cmd(char *cmd)
 	for (p = q = cmd; (*p != '\n') && (*p != '\0');) {
 		look_further(p);	/* Пропускаем пробелы если есть */
 		if(*p) {
-			if (*p == ';') return p+1;
+			if (*p == ';') 
+				if(p-1 < cmd || *(p-1) != ESCAPING)
+					return p+1;
 			q = p;
 			/* Выделяем путь к исполняемому файлу */
 			select_word(q);		/* Выделяется лексема, разделённая пробелами */
 			if (*q == ';') {
-				*q = 0;
-				tmp = _STR_DUP(p);
-				list_add_tail(tmp,strlen(tmp)+1,arg_list);	
-				return q + 1;
-			}
+				if(q-1 < cmd || *(q-1) != ESCAPING) {
+					*q = 0;
+					tmp = _STR_DUP(p);
+					list_add_tail(tmp,strlen(tmp)+1,arg_list);	
+					return q + 1;
+				} else {
+					p += 1;
+					q += 1;
+				}
+			} 
 			*q = 0;
 			tmp = _STR_DUP(p);
 			list_add_tail(tmp,strlen(tmp)+1,arg_list);

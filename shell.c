@@ -65,10 +65,12 @@ get:p = q = fgets(q,CMD_SIZE,stdin);
 	while(*p) if (*p++ == '#') {*(p-1) = '\0'; return cmd; }
     q += strlen(q)-1;
     for(;((q > cmd) && (*q != ESCAPING)); q--);
-    if (*q == ESCAPING) {
-		printf("->");	
-    	goto get; 											/* Хотите - ругайтесь, но выглядит */
-    }														/* это достаточно элегантно. ИМХО */
+    if (*q == ESCAPING) {				/* Учитываем эффект экранирования для некоторых символов */
+		if (*(q+1) != ';') {
+			printf("->");										/* Хотите - ругайтесь, но выглядит */
+	    	goto get; 											/* это достаточно элегантно. ИМХО */			
+		}
+	} 
 
     return cmd;
 }
@@ -91,9 +93,10 @@ int main(int argc, char *argv[])
 		clear_cmd_buff(command);					 	/* Принудительная очистка буффера команд */
 		printf("%s:%s#|>",user_name,short_path(curr_path));
 		cmd = get_command(command);			 			/* Выполнение команды */
-		while((cmd = parse_cmd(cmd)) != NULL)			/* Здесь гарантируется выполнение команд разделённых ';' */
+		do {
+			cmd = parse_cmd(cmd);
 			exec_command();
-		exec_command();									/* Выполнение последней команды */	
+		} while (cmd != NULL);
 	}
 	
 	return 0;
