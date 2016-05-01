@@ -80,21 +80,32 @@ int jobs_handl(void *prm)
 	return 0;
 }
 
+/* Команда для перевода процесса и фонового режима в текущий */
 int fg_handl(void *prm)
 {
-	list *tmp;
-	sing_exec *tsk;
-		
-	list_for_each(tmp,get_head(bg_jobs)) {
+	int num;
+	sing_exec *tsk = NULL;
+	char **argv = (char **) prm;
+
+	if (argv[1] != NULL && *argv[1] == '%') {	/* Если пользователь ввел номер процесса */
+		num = atoi(argv[1]+1);
+		if(num > 0 && num <= list_count(bg_jobs)) {
 			tsk = (sing_exec *) malloc(sizeof(sing_exec));
-			memcpy(tsk,(sing_exec*) list_entry(tmp),sizeof(sing_exec));
-			if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
-				kill(tsk->pid, SIGCONT);
-			current = *tsk;
-			wait_child(tsk);
-			list_del_elem(tmp,bg_jobs);
-			free(tsk);
-			return 0;
+			memcpy(tsk,(sing_exec *) list_get(num-1,bg_jobs),sizeof(sing_exec));
+			list_del_elem(list_get_header(num-1,bg_jobs),bg_jobs);
+		} else {
+			printf("Такой задачи нет %d\n", num );
+			return 1;
+		}
+	} else if(!list_empty(get_head(bg_jobs))) 
+		tsk = (sing_exec *) list_pop(bg_jobs); /* Иначе выводим первый процесс в списке */
+
+	if(tsk != NULL) {
+		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
+			kill(tsk->pid, SIGCONT);
+		current = *tsk;
+		wait_child(tsk);
+		free(tsk);
 	}
 
 	return 0;
@@ -113,7 +124,6 @@ int kill_handl(void *prm)
 	for (i = 0; argv[i] != NULL; i++)
 		if (*argv[i] == '%') {
 			num = atoi(argv[i]+1);
-			/* add_to_queue(num,&kill_q); */
 			if(num > 0 && num <= list_count(bg_jobs)) 
 				tsk = (sing_exec *) list_get(num-1,bg_jobs);
 			else {
