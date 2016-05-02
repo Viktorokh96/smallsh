@@ -49,6 +49,11 @@ void set_int_dfl()
 	set_sig_act(SIGQUIT,SIG_DFL,0,NULL);
 	set_sig_act(SIGTSTP,SIG_DFL,0,NULL);	
 	set_sig_act(SIGINT,SIG_DFL,0,NULL);
+	set_sig_act(SIGINT,SIG_DFL,0,NULL);
+	set_sig_act(SIGTTIN,SIG_DFL,0,NULL);
+	set_sig_act(SIGTTOU,SIG_DFL,0,NULL);
+	set_sig_act(SIGHUP,SIG_DFL,0,NULL);
+	set_sig_act(SIGTERM,SIG_DFL,0,NULL);
 }
 
 
@@ -61,7 +66,7 @@ int init_signals()
 
 	set_sig_act(SIGINT,&sig_handler,SA_RESTART, &sigset );
 	set_sig_act(SIGTSTP,&sig_handler,SA_RESTART, &sigset);
-	set_sig_act(SIGCHLD,SIG_IGN,0, NULL);
+	set_sig_act(SIGCHLD,SIG_DFL,SA_RESTART | SA_NOCLDSTOP, NULL);
 	set_sig_act(SIGQUIT,SIG_IGN,0, NULL);
 
 	return 0;

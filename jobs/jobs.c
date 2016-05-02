@@ -163,7 +163,7 @@ int exec_cmd (sing_exec *ex)
 				}
 				printf("\n%s: %s <- исполняемый файл не найден.\n",shell_name,ex->name);
 				_exit(stat);
-			} 
+			}
 		}
 		else {						/* Родитель (оболочка) */ 
 			current = *ex;			/* Установка текущего процесса */
@@ -173,7 +173,7 @@ int exec_cmd (sing_exec *ex)
 				current.pid = 0;	/* Фоновый процесс не является текущим */
 			} else { 
 				/* Ожидаем завершение выполнения текущего процесса */
-				wait_child(ex);
+				stat = wait_child(ex);
 			}
 		}
 	}
@@ -197,7 +197,7 @@ int wait_child(sing_exec *ex)
 		ex->name, sys_siglist[WSTOPSIG (child_stat)]);
 	}
 
-	return child_stat;
+	return WEXITSTATUS(child_stat);
 }
 
 void update_jobs()
