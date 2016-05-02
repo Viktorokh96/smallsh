@@ -50,8 +50,8 @@ void init_shell(unsigned mode, char *argv[])
 /* Запуск команды */
 void exec_command()
 {
-	sing_exec *first;
-
+	sing_exec *first;							/* Исполняемая единица - абстракция единица задания */
+												/* сама абстракция задания будет введена в следующей версии */
 	first = create_exec_queue();				/* Создание очереди на исполнение */
 	exec_cmd(first);							/* и непосредственное исполнение */
 }

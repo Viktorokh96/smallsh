@@ -50,8 +50,8 @@ void set_int_dfl()
 	set_sig_act(SIGTSTP,SIG_DFL,0,NULL);	
 	set_sig_act(SIGINT,SIG_DFL,0,NULL);
 	set_sig_act(SIGINT,SIG_DFL,0,NULL);
-	set_sig_act(SIGTTIN,SIG_DFL,0,NULL);
-	set_sig_act(SIGTTOU,SIG_DFL,0,NULL);
+	set_sig_act(SIGTTIN,SIG_DFL,0,NULL);		/* Требуется "временное разрешение" на ипользование */
+	set_sig_act(SIGTTOU,SIG_DFL,0,NULL);		/* терминала для вывода своих данных */
 	set_sig_act(SIGHUP,SIG_DFL,0,NULL);
 	set_sig_act(SIGTERM,SIG_DFL,0,NULL);
 }
