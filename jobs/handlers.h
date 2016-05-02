@@ -57,7 +57,7 @@ int jobs_handl(void *prm)
 {
 	int i;
 	list *tmp;
-	sing_exec *tsk;
+	task *tsk;
 	int show_pid = 0;
 	char **argv = (char **) prm;
 
@@ -68,11 +68,11 @@ int jobs_handl(void *prm)
 	
 	i = 1;
 	list_for_each(tmp,get_head(bg_jobs)) {
-		tsk = (sing_exec*) list_entry(tmp);
+		tsk = (task*) list_entry(tmp);
 		printf("[%d]%c %s\t\t%s",i,(i == 1) ? '+' : '-', 
 			(tsk->status == TSK_RUNNING)? 
-			"Running" : "Stopped",tsk->name);
-		if(show_pid) printf("\t\tPID: %d", tsk->pid);
+			"Running" : "Stopped",tsk->current_ex->name);
+		if(show_pid) printf("\t\tPID: %d", tsk->gpid);
 		printf("\n");
 		i++;	
 	}
@@ -84,27 +84,28 @@ int jobs_handl(void *prm)
 int fg_handl(void *prm)
 {
 	int num;
-	sing_exec *tsk = NULL;
+	task *tsk = NULL;
 	char **argv = (char **) prm;
 
 	if (argv[1] != NULL && *argv[1] == '%') {	/* Если пользователь ввел номер процесса */
 		num = atoi(argv[1]+1);
 		if(num > 0 && num <= list_count(bg_jobs)) {
-			tsk = (sing_exec *) malloc(sizeof(sing_exec));
-			memcpy(tsk,(sing_exec *) list_get(num-1,bg_jobs),sizeof(sing_exec));
+			tsk = (task *) malloc(sizeof(sing_exec));
+			memcpy(tsk,(task *) list_get(num-1,bg_jobs),sizeof(task));
 			list_del_elem(list_get_header(num-1,bg_jobs),bg_jobs);
 		} else {
 			printf("Такой задачи нет %d\n", num );
 			return 1;
 		}
 	} else if(!list_empty(get_head(bg_jobs))) 
-		tsk = (sing_exec *) list_pop(bg_jobs); /* Иначе выводим первый процесс в списке */
+		tsk = (task *) list_pop(bg_jobs); /* Иначе выводим первый процесс в списке */
 
 	if(tsk != NULL) {
 		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
-			kill(tsk->pid, SIGCONT);
-		current = *tsk;
-		wait_child(tsk);
+			kill(-(tsk->gpid), SIGCONT);
+		if(current == NULL) current = (task *) malloc(sizeof(task));
+		memcpy(current,tsk,sizeof(task));
+		wait_child(current->current_ex);
 		free(tsk);
 	}
 
@@ -115,7 +116,7 @@ int fg_handl(void *prm)
 int kill_handl(void *prm)
 {
 	list *tmp;
-	sing_exec *tsk;
+	task *tsk;
 	pid_t pid;
 	int i, num = 0;
 	char pidbuff[10];
@@ -125,16 +126,16 @@ int kill_handl(void *prm)
 		if (*argv[i] == '%') {
 			num = atoi(argv[i]+1);
 			if(num > 0 && num <= list_count(bg_jobs)) 
-				tsk = (sing_exec *) list_get(num-1,bg_jobs);
+				tsk = (task *) list_get(num-1,bg_jobs);
 			else {
 				printf("Такой задачи нет %d\n", num );
 				return 1;
 			}
 			free (argv[i]);
-			sprintf(pidbuff,"%d",tsk->pid);
+			sprintf(pidbuff,"%d",tsk->gpid);
 			argv[i] = _STR_DUP(pidbuff);
 			if (tsk->status == TSK_STOPPED)
-				kill(tsk->pid,SIGCONT);
+				kill(-(tsk->gpid),SIGCONT);
 		}
 
 	/* Выполнение внешней функции */
@@ -152,11 +153,11 @@ int kill_handl(void *prm)
 	for(; argv[i] != NULL; i++) {
 		pid = atoi(argv[i]);
 		list_for_each(tmp,get_head(bg_jobs)) {
-			tsk = (sing_exec*) list_entry(tmp);
-			if(tsk->pid == pid) {
+			tsk = (task*) list_entry(tmp);
+			if(tsk->gpid == pid) {
 				if (tsk->status == TSK_STOPPED)
-					kill(tsk->pid,SIGCONT);
-				waitpid(pid,NULL,WNOHANG);
+					kill(-(tsk->gpid),SIGCONT);
+				waitpid(pid,NULL,WNOHANG);				/* сбор "ошмётков" зомби */
 				tsk->status = TSK_KILLED;
 			}
 		}

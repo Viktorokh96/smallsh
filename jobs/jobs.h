@@ -29,6 +29,8 @@
 		#define _SETPGID(pid,pgid)		setpgid((pid),(pgid))
 	#endif
 
+    typedef struct st_task task;
+
 	typedef struct job_st {
 		char *name;					/* Имя команды */
 		int (*handler)(void *);  	/* Обработчик */
@@ -43,8 +45,18 @@
 			single_execute *next;	/* Следующая исполяемая единица в цепочке */		
 		int (*handler)(void *prm);	/* Указатель на исполнителя, если он есть */
 		pid_t pid;					/* Индетификатор процесса */
-		int status;					/* Статус процесса (выполняется или остановлен) */
+		task *tsk;					/* Задание в рамках которого выполнется данная исп.еденица */
 	} sing_exec;
+
+	typedef struct st_task {		/* Структура задания */
+		char *name;
+		pid_t gpid;					/* Индетификатор задания (группы процессов) */
+		int status;					/* Статус задания (выполняется или остановлен) */
+		int8_t mode;				/* Режим выполнения (фоновый или активный) */
+		struct queue sp_queue;		/* Очередь специальных символов */
+		sing_exec *first;
+		sing_exec *current_ex;
+	} task;
 
 	job job_sh; 		/* Структура для описания обработчика встроенной функции */
 
@@ -54,7 +66,6 @@
 	/* Список программ выполняющихся в фоновом режиме */
 	list_id bg_jobs;
 
-	struct queue sp_queue;
 
 	void init_jobs();
 	
@@ -82,7 +93,13 @@
 	void update_jobs();
 
 	/* Содание очереди на исполнение */
-	sing_exec *create_exec_queue();
+	sing_exec *create_exec_queue(task *tsk);
+
+	/* Создание нового задания */
+	task *create_task();
+
+	/* Запуск выполнения задания */
+	int exec_task(task *tsk);
 
 	/* Освобождение памяти, занятую под исп.единицу */
 	void free_exec(sing_exec *ex);
@@ -93,10 +110,11 @@
 				job_sh.handler = &(h); 	\
 				list_add(&job_sh,sizeof(job),sh_jobs);
 				
-	#define add_bg_job(proc,stat)								\
-					do {										\
-						(proc)->status = stat;					\
-						list_add(proc,sizeof(sing_exec),bg_jobs);\
-					} while (0)
+	#define add_bg_task(proc,stat)								\
+				do {										\
+					(proc)->tsk->status = stat;				\
+					(proc)->tsk->current_ex = (proc);		\
+					list_add((proc)->tsk,sizeof(task),bg_jobs);\
+				} while (0)
 
 #endif

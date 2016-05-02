@@ -23,18 +23,18 @@ void sig_handler(int signo)
 
 	if (signo == SIGINT) {
 		fflush(stdout);
-		if(current.pid != 0 && current.pid != getpid()) {	
-			kill(current.pid,SIGINT);
-			current.status = TSK_KILLED;
+		if(current && current -> gpid != 0 && current->gpid != getpid()) {	
+			kill(-current->gpid,SIGINT);
+			current->status = TSK_KILLED;
 		}
 		printf("\n");
 	}
 
 	if (signo == SIGTSTP) {
 		fflush(stdout);
-		if(current.pid != 0 && current.pid != getpid()) {	
-			kill(current.pid,SIGTSTP);					
-			current.status = TSK_STOPPED;
+		if(current && current->gpid != 0 && current->gpid != getpid()) {	
+			kill(-current->gpid,SIGTSTP);					
+			current->status = TSK_STOPPED;
 		}
 		printf("\n");
 	}

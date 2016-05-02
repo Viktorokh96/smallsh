@@ -116,7 +116,7 @@ void exec_next(sing_exec *ex, int stat)
 {
 	int spec;
 	if (ex->next != NULL) {
-		if((spec = get_from_queue(&sp_queue)) != EMPTY_Q) {
+		if((spec = get_from_queue(&(ex->tsk->sp_queue))) != EMPTY_Q) {
 			if(spec == NO_SPEC) { 
 				exec_cmd(ex->next); 
 				return; 
@@ -156,6 +156,7 @@ int exec_cmd (sing_exec *ex)
 			switch_io(ex);			/* Если требуется перенаправление в/в */
 			set_int_dfl();			/* Установка обработчиков сигналов */
 			_SETPGID(ex->pid,0);	/* Создаём новую группу процессов (ВАЖНО) */
+			ex->tsk->gpid = ex->pid;
 			if((stat = try_exec(getenv("PATH"),ex)) != 0) {
 				if( (*(ex->name) == '.')
 				&&	((stat = try_exec(getenv("PWD"),ex)) == 0)) {
@@ -165,21 +166,23 @@ int exec_cmd (sing_exec *ex)
 				_exit(stat);
 			}
 		}
-		else {						/* Родитель (оболочка) */ 
-			current = *ex;			/* Установка текущего процесса */
+		else {									/* Родитель (оболочка) */ 
+			ex->tsk->current_ex = ex;			/* Установка текущего процесса */
+			current = ex->tsk;
 			if (bit_seted(ex->mode,RUN_BACKGR)) {
-				add_bg_job(ex,TSK_RUNNING);
+				add_bg_task(ex,TSK_RUNNING);
 				printf("+1 background -> %d\n", ex->pid );
-				current.pid = 0;	/* Фоновый процесс не является текущим */
+				ex->tsk->gpid = 0;	/* Фоновый процесс не является текущим */
 			} else { 
 				/* Ожидаем завершение выполнения текущего процесса */
+				ex->tsk->gpid = ex->pid;
 				stat = wait_child(ex);
 			}
 		}
 	}
 
 	exec_next(ex,stat);
-	current.pid = 0;
+	current->gpid = 0;
 	free(ex);						/* Процесс отработал своё и больше не нужен */
 	return (WIFEXITED(stat)) ? WEXITSTATUS(stat) : -1;
 }
@@ -192,7 +195,7 @@ int wait_child(sing_exec *ex)
 	waitpid(ex->pid,&child_stat,WUNTRACED);
 	
 	if (WIFSTOPPED (child_stat)) {			/* Процесс был остановлен */
-		add_bg_job(ex,TSK_STOPPED);
+		add_bg_task(ex,TSK_STOPPED);
 		printf ("\n%s: process %d \t %s \tstoped by signal :> %s\n", shell_name, ex->pid,
 		ex->name, sys_siglist[WSTOPSIG (child_stat)]);
 	}
@@ -235,8 +238,29 @@ int find_spec(int i, list_id lid)
 }
 
 
+/* Создание нового задания */
+task *create_task()
+{
+	task *tsk = (task *) malloc(sizeof(task));
+
+	tsk -> name = current_cmd;
+	tsk -> gpid = 0;
+	tsk -> status = 0;
+	init_queue(&(tsk -> sp_queue));					/* Инициализация очереди специальных символов */
+	tsk -> first = create_exec_queue(tsk);
+	tsk -> current_ex = NULL;
+
+	return tsk;
+}
+
+/* Запуск выполнения задания */
+int exec_task(task *tsk)
+{
+	return exec_cmd(tsk->first);
+}
+
 /* Создание очереди на исполнение */
-sing_exec *create_exec_queue()
+sing_exec *create_exec_queue(task *tsk)
 {
 	sing_exec *ex, *past, *next;
 	list *tmp;
@@ -248,8 +272,8 @@ sing_exec *create_exec_queue()
 
 	/* Первое прохождение */
 	list_for_each(tmp, get_head(arg_list)) {
-		if (is_same(tmp,"&&")) add_to_queue(SPEC_AND,&sp_queue);
-		if (is_same(tmp,"||")) add_to_queue(SPEC_OR,&sp_queue);
+		if (is_same(tmp,"&&")) add_to_queue(SPEC_AND,&(tsk->sp_queue));
+		if (is_same(tmp,"||")) add_to_queue(SPEC_OR,&(tsk->sp_queue));
 	}
 
 	/* Образование самого первого процесса в очереди процессов */
@@ -259,10 +283,11 @@ sing_exec *create_exec_queue()
 	prepare_args(0,ex,FOR_BACKGR,arg_list);
 	ex -> file = (char *) prepare_args(0, ex , FOR_IO ,arg_list);	
 	ex -> argv = (char **) prepare_args(0, ex , FOR_ARGS ,arg_list);
-	ex->handler = is_shell_cmd(ex->name);			/* Проверяем, встроена ли функция в оболочку */
+	ex -> handler = is_shell_cmd(ex->name);			/* Проверяем, встроена ли функция в оболочку */
+	ex -> tsk = tsk;								/* Указываем на принадлежность к заданию */
 	ex -> next = NULL;
 
-	if(!queue_empty(sp_queue)) {	/* Учавствует более одного процесса */
+	if(!queue_empty(tsk->sp_queue)) {				/* Учавствует более одного процесса */
 		past = ex;
 		i = 0;
 		while((i = find_spec(i,arg_list))) {
@@ -273,6 +298,7 @@ sing_exec *create_exec_queue()
 			next -> file = (char *)  prepare_args(i, ex , FOR_IO, arg_list);	
 			next -> argv = (char **) prepare_args(i, ex,  FOR_ARGS, arg_list);
 			next->handler = is_shell_cmd(next->name);	/* Проверяем, встроена ли функция в оболочку */
+			next -> tsk = tsk;							/* Указываем на принадлежность к заданию */
 			next -> next = NULL;
 			past->next = next;
 			past = next;
@@ -296,8 +322,6 @@ int (* is_shell_cmd(char *cmd)) (void *)
 /* Инициализация встроенных обработчиков */
 void init_jobs()
 {
-	init_queue(&sp_queue);
-
 	sh_jobs = init_list();
 	bg_jobs = init_list();
 
