@@ -51,6 +51,6 @@ int init_general()
 
 void del_general()
 {
-	list_del(arg_list);
-	list_del(path_list);
+	list_del(&arg_list);
+	list_del(&path_list);
 }

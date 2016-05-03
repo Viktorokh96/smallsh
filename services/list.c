@@ -100,21 +100,23 @@ list_id init_list()
 	return new_list;
 }
 
-void list_del (list_id lid)
+void list_del (list_id *lid)
 {
-	if (lid < 0 || lid > MAXLISTS) return;
+	if (*lid < 0 || *lid > MAXLISTS) return;
 
-	if (bit_seted(bit_map, 1 << lid)) {			/* Если очеред инициализирована */ 
-		if(!list_empty(&list_heads[lid])) {
+	if (bit_seted(bit_map, 1 << *lid)) {			/* Если очеред инициализирована */ 
+		if(!list_empty(&list_heads[*lid])) {
 			list *tmp1 , *tmp2 = NULL;
-			list_for_each(tmp1,get_head(lid)) { 
+			list_for_each(tmp1,get_head(*lid)) { 
 				free(tmp2);
 				tmp2 = tmp1;
 			}
 			free(tmp2);						/* Удаление последнего элемента */
 		}
-		unset_bit(bit_map, 1 << lid);
+		unset_bit(bit_map, 1 << *lid);
 	}
+
+	*lid = UNINIT;
 }
 /* Добавить элемент в начало списка */
 list *list_add (void *cont, size_t size, list_id lid)

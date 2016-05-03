@@ -111,6 +111,8 @@ void exec_next(sing_exec *ex, int stat)
 {
 	int spec;
 
+	if (WIFSTOPPED (stat)) return;
+
 	if (ex == NULL) {
 		fprintf(stderr, "Ошибка exec_next: передан пустой аргумент ex!\n");
 		return;
@@ -122,15 +124,15 @@ void exec_next(sing_exec *ex, int stat)
 				exec_cmd(ex->next); 
 				return; 
 			}
-			if (((stat == 0) && (spec == SPEC_AND)) ||
-				((stat != 0) && (spec == SPEC_OR))) {
+			if (((WEXITSTATUS(stat) == 0) && (spec == SPEC_AND)) ||
+				((WEXITSTATUS(stat) != 0) && (spec == SPEC_OR))) {
 				exec_cmd(ex->next);
 			} else {
-				destroy_task(ex->tsk);					/* Уничтожаем задание */ 
+				ex->tsk->status =  TSK_EXITED;
 				return;
 			}
 		}
-	} else destroy_task(ex->tsk);
+	} else ex->tsk->status =  TSK_EXITED;
 }
 
 void switch_io(sing_exec *ex)
@@ -180,11 +182,12 @@ int exec_cmd (sing_exec *ex)
 			if(tsk->first == ex) {
 				_SETPGID(ex->pid,ex->pid);		/* Создаём новую группу процессов (ВАЖНО) */
 				tsk->gpid = ex->pid;
+				tsk->status = TSK_RUNNING;		/* Задание выполняется */
 			} else {
 				_SETPGID(tsk->gpid,ex->pid);/* Присоединяем процесс к уже созданной группе */
 			}
 
-			tsk->status = TSK_RUNNING;
+			tsk -> current_ex = ex;				/* Установка текущей команды */
 
 /* ??? */	current = *tsk;
 
@@ -205,6 +208,7 @@ int exec_cmd (sing_exec *ex)
 	}
 
 	exec_next(ex,stat);
+	update_jobs();								/* Под вопросом */
 	return (WIFEXITED(stat)) ? WEXITSTATUS(stat) : -1;
 }
 
@@ -216,27 +220,28 @@ int wait_child(sing_exec *ex)
 	waitpid(ex->pid,&child_stat,WUNTRACED);
 	
 	if (WIFSTOPPED (child_stat)) {			/* Процесс был остановлен */
+		ex->tsk->current_ex = ex;			/* Был остановлен на этой команде */
 		add_bg_task(ex->tsk,TSK_STOPPED);
 		printf ("%s: process %d \t %s \tstoped by signal :> %s\n", shell_name, ex->pid,
 		ex->name, sys_siglist[WSTOPSIG (child_stat)]);
 	}
 
-	return WEXITSTATUS(child_stat);
+	return child_stat;
 }
 
 void update_jobs()
 {
 	list *tmp, *next;
-	sing_exec *tsk;
+	task *tsk;
 
 	for (tmp = get_head(bg_jobs)->mnext; 
 	tmp != get_head(bg_jobs);
 	tmp = next) { 
-		tsk = (sing_exec*) list_entry(tmp); 
-		kill(-(tsk->pid),0);						/* Необходимо как минимум ещё 1 раз */
-		if(errno == ESRCH) {				 		/* удостовериться что группа процессов мертва */
+		tsk = (task*) list_entry(tmp); 
+		kill(-(tsk->gpid),0);						/* Необходимо проверить работает ли задание */
+		if(errno == ESRCH || tsk->status == TSK_EXITED) { /* удостовериться что группа процессов мертва */
 			printf("Killed -> %d 	%s\n",
-					tsk->pid, tsk->name);
+					tsk->gpid, tsk->name);
 			next = tmp->mnext;
 			list_del_elem(tmp,bg_jobs);
 		} else {									/* Если процесс таки не завершился */
@@ -285,6 +290,26 @@ int exec_task(task *tsk)
 	return stat;
 }
 
+sing_exec *make_sing_exec(task *tsk,int num,list_id arg_list)
+{
+	sing_exec *ex = NULL;
+	ex = (sing_exec *) malloc(sizeof(sing_exec));
+	ex -> ios = 0;
+	if (arg_list != UNINIT) {
+		ex -> name = _STR_DUP((char *) list_get(num,arg_list));
+		ex -> file = (char *)  prepare_args(num, ex , FOR_IO, arg_list);	
+		ex -> argv = (char **) prepare_args(num, ex,  FOR_ARGS, arg_list);
+	} else {
+		fprintf(stderr, "Ошибка make_sing_exec! Не инициализирован список аргументов! \n");
+		return NULL;
+	}
+	ex -> handler = is_shell_cmd(ex->name);	/* Проверяем, встроена ли функция в оболочку */
+	ex -> tsk = tsk;							/* Указываем на принадлежность к заданию */
+	ex -> next = NULL;
+
+	return ex;
+}
+
 /* Создание очереди на исполнение */
 sing_exec *create_exec_queue(task *tsk)
 {
@@ -309,29 +334,15 @@ sing_exec *create_exec_queue(task *tsk)
 				tsk->mode = RUN_BACKGR;
 				list_connect(list_size-2,list_size,arg_list);		/* Избавляемся от этого символа */
 			}
-
+	ex = next = NULL;
 	/* Образование самого первого процесса в очереди процессов */
-	ex = (sing_exec *) malloc(sizeof(sing_exec));
-	ex->ios = 0;
-	ex->name = _STR_DUP((char *) list_get(0,arg_list));
-	ex -> file = (char *) prepare_args(0, ex , FOR_IO ,arg_list);	
-	ex -> argv = (char **) prepare_args(0, ex , FOR_ARGS ,arg_list);
-	ex -> handler = is_shell_cmd(ex->name);			/* Проверяем, встроена ли функция в оболочку */
-	ex -> tsk = tsk;								/* Указываем на принадлежность к заданию */
-	ex -> next = NULL;
+	ex = make_sing_exec(tsk,0,arg_list);
 
 	if(!queue_empty(tsk->sp_queue)) {				/* Учавствует более одного процесса */
 		past = ex;
 		i = 0;
 		while((i = find_spec(i,arg_list))) {
-			next = (sing_exec *) malloc(sizeof(sing_exec));
-			next -> ios = 0;
-			next ->	name = _STR_DUP((char *) list_get(i,arg_list));
-			next -> file = (char *)  prepare_args(i, ex , FOR_IO, arg_list);	
-			next -> argv = (char **) prepare_args(i, ex,  FOR_ARGS, arg_list);
-			next->handler = is_shell_cmd(next->name);	/* Проверяем, встроена ли функция в оболочку */
-			next -> tsk = tsk;							/* Указываем на принадлежность к заданию */
-			next -> next = NULL;
+			next = make_sing_exec(tsk,i,arg_list);
 			past->next = next;
 			past = next;
 		}
@@ -369,6 +380,6 @@ void init_jobs()
 
 void del_jobs()
 {
-	list_del(sh_jobs);
-	list_del(bg_jobs);
+	list_del(&sh_jobs);
+	list_del(&bg_jobs);
 }

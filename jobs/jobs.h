@@ -108,8 +108,14 @@
 	/* Содание очереди на исполнение */
 	sing_exec *create_exec_queue(task *tsk);
 
+	/* Инициализация команды */
+	sing_exec *make_sing_exec(task *tsk,int num,list_id arg_list);
+
 	/* Создание нового задания */
 	task *create_task();
+
+	/* Проверка статуса с последующим выполнением (возвращает 1 если next = NULL) */
+	void exec_next(sing_exec *ex, int stat);
 
 	/* Запуск выполнения задания */
 	int exec_task(task *tsk);

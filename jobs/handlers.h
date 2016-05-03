@@ -68,10 +68,10 @@ int jobs_handl(void *prm)
 	
 	i = 1;
 	list_for_each(tmp,get_head(bg_jobs)) {
-		tsk = (task*) list_entry(tmp);
+		tsk = (task *) list_entry(tmp);
 		printf("[%d]%c %s\t\t%s",i,(i == 1) ? '+' : '-', 
 			(tsk->status == TSK_RUNNING)? 
-			"Running" : "Stopped",tsk->current_ex->name);
+			"Running" : "Stopped",tsk->name);
 		if(show_pid) printf("\t\tPID: %d", tsk->gpid);
 		printf("\n");
 		i++;	
@@ -84,6 +84,7 @@ int jobs_handl(void *prm)
 int fg_handl(void *prm)
 {
 	int num;
+	int stat;
 	task *tsk = NULL;
 	char **argv = (char **) prm;
 
@@ -100,11 +101,14 @@ int fg_handl(void *prm)
 	} else if(!list_empty(get_head(bg_jobs))) 
 		tsk = (task *) list_pop(bg_jobs); /* Иначе выводим первый процесс в списке */
 
+	/* tsk - теперь это копия того задания, что был в спискке bg_jobs */
 	if(tsk != NULL) {
 		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
 			kill(-(tsk->gpid), SIGCONT);
+		tsk->mode = RUN_ACTIVE;					/* Перевод в активный режим */
 		current = *tsk;
-		wait_child(current.current_ex);
+		stat = wait_child(tsk->current_ex);
+		exec_next(tsk->current_ex,stat);
 		free(tsk);
 	}
 
@@ -138,14 +142,16 @@ int kill_handl(void *prm)
 		}
 
 	/* Выполнение внешней функции */
-	sing_exec *ex = (sing_exec *) malloc(sizeof(sing_exec));
-	ex->name = strdup(argv[0]);
-	ex->ios = 0;
-	ex->file = NULL;
-	ex->argv = argv;
-	ex->next = NULL;
+	if (arg_list != UNINIT)	list_del(&arg_list);			/* Удаляем старый список */
+	arg_list = init_list();
 	
-	exec_cmd(ex);		
+	for(i = 0; argv[i] != NULL; i++)						/* Грязный хак */
+		list_add_tail(argv[i],strlen(argv[i])+1,arg_list);
+
+	tsk = create_task();
+	tsk->first-> handler = NULL;
+
+	exec_cmd(tsk->first);		
 
 	i = 1;
 	while (*argv[i] == '-') i++;
@@ -156,7 +162,7 @@ int kill_handl(void *prm)
 			if(tsk->gpid == pid) {
 				if (tsk->status == TSK_STOPPED)
 					kill(-(tsk->gpid),SIGCONT);
-				waitpid(pid,NULL,WNOHANG);				/* сбор "ошмётков" зомби */
+				waitpid(-pid,NULL,WNOHANG);				/* сбор "ошмётков" зомби */
 				tsk->status = TSK_KILLED;
 			}
 		}

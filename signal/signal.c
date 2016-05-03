@@ -40,7 +40,7 @@ void sig_handler(int signo)
 	}
 
 	if(signo == SIGCHLD) {
-		printf("SIGCHLD\n");			/* Отладка */
+		printf("DEBUG MSG : SIGCHLD\n");			/* Отладка */
 	}
 }					
 
