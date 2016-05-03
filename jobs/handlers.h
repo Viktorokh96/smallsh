@@ -103,9 +103,8 @@ int fg_handl(void *prm)
 	if(tsk != NULL) {
 		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
 			kill(-(tsk->gpid), SIGCONT);
-		if(current == NULL) current = (task *) malloc(sizeof(task));
-		memcpy(current,tsk,sizeof(task));
-		wait_child(current->current_ex);
+		current = *tsk;
+		wait_child(current.current_ex);
 		free(tsk);
 	}
 

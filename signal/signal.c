@@ -23,20 +23,24 @@ void sig_handler(int signo)
 
 	if (signo == SIGINT) {
 		fflush(stdout);
-		if(current && current -> gpid != 0 && current->gpid != getpid()) {	
-			kill(-current->gpid,SIGINT);
-			current->status = TSK_KILLED;
+		if(current.gpid != 0 && current.gpid != getpid()) {	
+			kill(-current.gpid,SIGINT);
+			current.status = TSK_KILLED;
 		}
 		printf("\n");
 	}
 
 	if (signo == SIGTSTP) {
 		fflush(stdout);
-		if(current && current->gpid != 0 && current->gpid != getpid()) {	
-			kill(-current->gpid,SIGTSTP);					
-			current->status = TSK_STOPPED;
+		if(current.gpid != 0 && current.gpid != getpid()) {	
+			kill(-current.gpid,SIGTSTP);					
+			current.status = TSK_STOPPED;
 		}
 		printf("\n");
+	}
+
+	if(signo == SIGCHLD) {
+		printf("SIGCHLD\n");			/* Отладка */
 	}
 }					
 
@@ -66,7 +70,7 @@ int init_signals()
 
 	set_sig_act(SIGINT,&sig_handler,SA_RESTART, &sigset );
 	set_sig_act(SIGTSTP,&sig_handler,SA_RESTART, &sigset);
-	set_sig_act(SIGCHLD,SIG_DFL,SA_RESTART | SA_NOCLDSTOP, NULL);
+	set_sig_act(SIGCHLD,&sig_handler,SA_NODEFER | SA_RESTART , NULL);
 	set_sig_act(SIGQUIT,SIG_IGN,0, NULL);
 
 	return 0;

@@ -44,7 +44,7 @@ int init_general()
 	shell_pid = setsid();									/* Создание новой сессии */
 	home_path = getenv("HOME");
 	user_name = getpwuid(geteuid())->pw_name;				/* Получаем имя пользователя */
-	current = (task *) malloc(sizeof(task));
+	current.gpid = 0;
 	
 	return 0;
 }

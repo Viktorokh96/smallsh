@@ -29,6 +29,16 @@
 		#define _SETPGID(pid,pgid)		setpgid((pid),(pgid))
 	#endif
 
+    /* Состояния задания */
+	#define	TSK_RUNNING	1
+	#define TSK_STOPPED	2
+	#define TSK_KILLED	3
+   	#define TSK_EXITED	4
+
+    /* Режимы выполнения задания */
+	#define RUN_ACTIVE		1		/* Задача требует запуска в активном режиме */
+	#define RUN_BACKGR		2		/* Задача требует запуска в фоновом режиме */
+
     typedef struct st_task task;
 
 	typedef struct job_st {

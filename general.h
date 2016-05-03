@@ -32,7 +32,7 @@
 	char *current_cmd;
 
 	/* Текущее исполняемое задание */
-	task* current;
+	task current;
 
 	/* Предыдущая директория */
 	list_id path_list;
