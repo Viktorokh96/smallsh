@@ -39,6 +39,9 @@
 	#define RUN_ACTIVE		1		/* Задача требует запуска в активном режиме */
 	#define RUN_BACKGR		2		/* Задача требует запуска в фоновом режиме */
 
+    #define PASS_BACKGR		-1		/* От exec_cmd означает что процесс выполняется в фоновом режиме */
+    #define EMPTY_EX		-2		/* Если пустая команда */
+
     typedef struct st_task task;
 
 	typedef struct job_st {
@@ -114,16 +117,19 @@
 	/* Освобождение памяти, занятую под исп.единицу */
 	void free_exec(sing_exec *ex);
 
+	/* Освобождение памяти, занятую под задание */
+	void destroy_task(task *tsk);
+
 	/* Добавление обработчика встроенной функции оболочки */
 	#define add_job(n,h) 				\
 				job_sh.name = (n); 		\
 				job_sh.handler = &(h); 	\
 				list_add(&job_sh,sizeof(job),sh_jobs);
 				
-	#define add_bg_task(task,stat)								\
+	#define add_bg_task(tsk,stat)								\
 				do {											\
-					(task)->status = stat;						\
-					list_add((task),sizeof(task),bg_jobs);		\
+					(tsk)->status = stat;						\
+					list_add((tsk),sizeof(task),bg_jobs);		\
 				} while (0)
 
 #endif

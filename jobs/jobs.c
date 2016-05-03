@@ -100,27 +100,37 @@ int try_exec(char *path, sing_exec *ex)
 	return state;
 }
 
+void destroy_task(task *tsk)
+{
+	if(tsk->name != NULL) free(tsk->name);
+	if(tsk->first != NULL) free_exec(tsk->first);
+}
+
 /* Проверка статуса с последующим выполнением (возвращает 1 если next = NULL) */
-int exec_next(sing_exec *ex, int stat)
+void exec_next(sing_exec *ex, int stat)
 {
 	int spec;
+
+	if (ex == NULL) {
+		fprintf(stderr, "Ошибка exec_next: передан пустой аргумент ex!\n");
+		return;
+	}
+
 	if (ex->next != NULL) {
 		if((spec = get_from_queue(&(ex->tsk->sp_queue))) != EMPTY_Q) {
 			if(spec == NO_SPEC) { 
 				exec_cmd(ex->next); 
-				return 0; 
+				return; 
 			}
 			if (((stat == 0) && (spec == SPEC_AND)) ||
 				((stat != 0) && (spec == SPEC_OR))) {
 				exec_cmd(ex->next);
 			} else {
-				free_exec(ex->next);	/* Освобождаем ненужные элементы */ 
-				return 1;
+				destroy_task(ex->tsk);					/* Уничтожаем задание */ 
+				return;
 			}
 		}
-	} else return 1;
-
-	return 0;
+	} else destroy_task(ex->tsk);
 }
 
 void switch_io(sing_exec *ex)
@@ -138,10 +148,11 @@ void switch_io(sing_exec *ex)
 /* Исполнение команды */
 int exec_cmd (sing_exec *ex)
 {
-	int stat, last = 0;
-	task *tsk = ex->tsk;
+	int stat;
 
-	if(ex == NULL) return 1;								/* Какой-то процесс не был сформирован */
+	if(ex == NULL) return EMPTY_EX;	/* Если пустая команда */
+	
+	task *tsk = ex->tsk;			/* Для краткой записи в дальейшем */
 
 #if 0
 	if (ex->tsk->mode = RUN_BACKGR) {
@@ -166,20 +177,23 @@ int exec_cmd (sing_exec *ex)
 			}
 		}
 		else {									/* Родитель (оболочка) */ 
-			if(ex->tsk->first == ex) {
+			if(tsk->first == ex) {
 				_SETPGID(ex->pid,ex->pid);		/* Создаём новую группу процессов (ВАЖНО) */
-				ex->tsk->gpid = ex->pid;
+				tsk->gpid = ex->pid;
 			} else {
-				_SETPGID(ex->tsk->gpid,ex->pid);/* Присоединяем процесс к уже созданной группе */
+				_SETPGID(tsk->gpid,ex->pid);/* Присоединяем процесс к уже созданной группе */
 			}
 
-/* ??? */	current = *ex->tsk;
+			tsk->status = TSK_RUNNING;
+
+/* ??? */	current = *tsk;
 
 			/* Проверяем выполняется ли эта команда в фоновом задании */
-			if(ex->tsk->mode == RUN_BACKGR) {
+			if(tsk->mode == RUN_BACKGR) {
 				current.gpid = 0;				/* Фоновый процесс не является текущим */
+				return PASS_BACKGR;
 			} 
-			else if(ex->tsk->mode == RUN_ACTIVE) { 
+			else if(tsk->mode == RUN_ACTIVE) { 
 				/* Ожидаем завершение выполнения текущего процесса */
 				stat = wait_child(ex);
 			}
@@ -190,11 +204,7 @@ int exec_cmd (sing_exec *ex)
 		}
 	}
 
-	last = exec_next(ex,stat);
-	if (last != 0) {
-		free_exec(ex->tsk->first);					/* Завершено выполнение задания */
-		tsk->status = TSK_EXITED;
-	}
+	exec_next(ex,stat);
 	return (WIFEXITED(stat)) ? WEXITSTATUS(stat) : -1;
 }
 
@@ -207,7 +217,7 @@ int wait_child(sing_exec *ex)
 	
 	if (WIFSTOPPED (child_stat)) {			/* Процесс был остановлен */
 		add_bg_task(ex->tsk,TSK_STOPPED);
-		printf ("\n%s: process %d \t %s \tstoped by signal :> %s\n", shell_name, ex->pid,
+		printf ("%s: process %d \t %s \tstoped by signal :> %s\n", shell_name, ex->pid,
 		ex->name, sys_siglist[WSTOPSIG (child_stat)]);
 	}
 
@@ -261,7 +271,7 @@ task *create_task()
 	tsk -> first = create_exec_queue(tsk);
 	tsk -> current_ex = NULL;
 
-	return tsk;
+	return (tsk -> first == NULL) ? NULL : tsk;		/* Пустое задание - это ничего, => незачем возвращать что-то кроме NULL */
 }
 
 /* Запуск выполнения задания */
@@ -295,6 +305,11 @@ sing_exec *create_exec_queue(task *tsk)
 		if (is_same(tmp,"||")) add_to_queue(SPEC_OR,&(tsk->sp_queue));
 	}
 
+	if(!compare_str((char *)list_get(list_size-1,arg_list),"&")) {
+				tsk->mode = RUN_BACKGR;
+				list_connect(list_size-2,list_size,arg_list);		/* Избавляемся от этого символа */
+			}
+
 	/* Образование самого первого процесса в очереди процессов */
 	ex = (sing_exec *) malloc(sizeof(sing_exec));
 	ex->ios = 0;
@@ -321,10 +336,6 @@ sing_exec *create_exec_queue(task *tsk)
 			past = next;
 		}
 	}
-	if(!compare_str((char *)list_get(list_size-1,arg_list),"&")) {
-				tsk->mode = RUN_BACKGR;
-				list_connect(list_size-2,list_size-1,arg_list);		/* Избавляемся от этого символа */
-			}
 	return ex;
 }
 
