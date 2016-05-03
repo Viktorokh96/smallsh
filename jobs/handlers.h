@@ -141,7 +141,7 @@ int kill_handl(void *prm)
 	/* Выполнение внешней функции */
 	sing_exec *ex = (sing_exec *) malloc(sizeof(sing_exec));
 	ex->name = strdup(argv[0]);
-	ex->mode = 0;
+	ex->ios = 0;
 	ex->file = NULL;
 	ex->argv = argv;
 	ex->next = NULL;

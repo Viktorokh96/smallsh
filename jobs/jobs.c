@@ -65,28 +65,24 @@ void *prepare_args(int num, sing_exec *ex, unsigned mode, list_id lid)
 			 		list_get(i+1,lid) != NULL) {
 					filename = _STR_DUP((char *)list_get(i+1,lid));
 					list_connect(i-1,i+2,lid);		/* Избавляемся от этих аргументов */
-					set_bit(ex->mode,IO_IN);
+					set_bit(ex->ios,IO_IN);
 					return filename;
 				}
 				if(!compare_str((char *)list_get(i,lid),">") &&
 			 		list_get(i+1,lid) != NULL) {
 					filename = _STR_DUP((char *)list_get(i+1,lid));
 					list_connect(i-1,i+2,lid);		/* Избавляемся от этих аргументов */
-					set_bit(ex->mode,IO_OUT);
+					set_bit(ex->ios,IO_OUT);
 					return filename;
 				}
 			}
 			return NULL;
 
-		case FOR_BACKGR:
-			size = 1;
-			go_spec_symb(tmp,num,lid,size);
-				for (i = num; i < num+size-1; i++) {
-					if(!compare_str((char *)list_get(i,lid),"&")) {
-						set_bit(ex->mode,RUN_BACKGR);
-						list_connect(i-1,i+1,lid);		/* Избавляемся от этого символа */
-						return NULL;
-					}
+		case FOR_BACKGR:	
+				if(!compare_str((char *)list_get(list_count(arg_list)-1,lid),"&")) {
+					set_bit(ex->tsk->mode,RUN_BACKGR);
+					list_connect(list_count(arg_list)-2,list_count(arg_list)-1,lid);		/* Избавляемся от этого символа */
+					return NULL;
 				}
 				return NULL;
 		default: return NULL;
@@ -132,10 +128,10 @@ void exec_next(sing_exec *ex, int stat)
 void switch_io(sing_exec *ex)
 {
 	if (ex->file != NULL) {
-		if(bit_seted(ex->mode,IO_OUT))
+		if(bit_seted(ex->ios,IO_OUT))
 			if((freopen(ex->file,"w+",stdout)) == NULL)
 				perror("open file error!:");
-		if(bit_seted(ex->mode,IO_IN))
+		if(bit_seted(ex->ios,IO_IN))
 			if((freopen(ex->file,"r",stdin)) == NULL)
 				perror("open file error!:");
 	}
@@ -169,7 +165,7 @@ int exec_cmd (sing_exec *ex)
 		else {									/* Родитель (оболочка) */ 
 			ex->tsk->current_ex = ex;			/* Установка текущего процесса */
 			current = ex->tsk;
-			if (bit_seted(ex->mode,RUN_BACKGR)) {
+			if (bit_seted(ex->tsk->mode,RUN_BACKGR)) {
 				add_bg_task(ex,TSK_RUNNING);
 				printf("+1 background -> %d\n", ex->pid );
 				ex->tsk->gpid = 0;	/* Фоновый процесс не является текущим */
@@ -278,7 +274,7 @@ sing_exec *create_exec_queue(task *tsk)
 
 	/* Образование самого первого процесса в очереди процессов */
 	ex = (sing_exec *) malloc(sizeof(sing_exec));
-	ex->mode = 0;
+	ex->ios = 0;
 	ex->name = _STR_DUP((char *) list_get(0,arg_list));
 	prepare_args(0,ex,FOR_BACKGR,arg_list);
 	ex -> file = (char *) prepare_args(0, ex , FOR_IO ,arg_list);	
@@ -292,7 +288,7 @@ sing_exec *create_exec_queue(task *tsk)
 		i = 0;
 		while((i = find_spec(i,arg_list))) {
 			next = (sing_exec *) malloc(sizeof(sing_exec));
-			next -> mode = 0;
+			next -> ios = 0;
 			next ->	name = _STR_DUP((char *) list_get(i,arg_list));
 			prepare_args(i,ex,FOR_BACKGR,arg_list);
 			next -> file = (char *)  prepare_args(i, ex , FOR_IO, arg_list);	

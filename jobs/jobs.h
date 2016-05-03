@@ -40,7 +40,7 @@
 		char *name;
 		char **argv;				/* Аргументы исполняемой единицы */
 		char *file;					/* Файлы в которые или из которых идёт в\в данных */
-		int8_t mode;				/* Режим перенаправления ввода вывода */
+		int8_t ios;					/* Режим перенаправления ввода вывода */
 		struct
 			single_execute *next;	/* Следующая исполяемая единица в цепочке */		
 		int (*handler)(void *prm);	/* Указатель на исполнителя, если он есть */
@@ -110,11 +110,10 @@
 				job_sh.handler = &(h); 	\
 				list_add(&job_sh,sizeof(job),sh_jobs);
 				
-	#define add_bg_task(proc,stat)								\
-				do {										\
-					(proc)->tsk->status = stat;				\
-					(proc)->tsk->current_ex = (proc);		\
-					list_add((proc)->tsk,sizeof(task),bg_jobs);\
+	#define add_bg_task(task,stat)								\
+				do {											\
+					(task)->status = stat;						\
+					list_add((task),sizeof(task),bg_jobs);		\
 				} while (0)
 
 #endif
