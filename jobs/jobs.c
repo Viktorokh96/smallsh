@@ -374,7 +374,7 @@ void init_jobs()
 	add_job("kill",kill_handl);
 	add_job("jobs",jobs_handl);
 	add_job("fg",fg_handl);
-	add_job("bg",fg_handl);
+	add_job("bg",bg_handl);
 }
 
 void del_jobs()

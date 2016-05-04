@@ -142,6 +142,7 @@ int bg_handl(void *prm)
 		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
 			kill(-(tsk->gpid), SIGCONT);
 		tsk->mode = RUN_BACKGR;					/* Перевод в активный режим */
+		tsk->status = TSK_RUNNING;
 	}
 
 	return 0;
