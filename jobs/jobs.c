@@ -120,10 +120,6 @@ void exec_next(sing_exec *ex, int stat)
 
 	if (ex->next != NULL) {
 		if((spec = get_from_queue(&(ex->tsk->sp_queue))) != EMPTY_Q) {
-			if(spec == NO_SPEC) { 
-				exec_cmd(ex->next); 
-				return; 
-			}
 			if (((WEXITSTATUS(stat) == 0) && (spec == SPEC_AND)) ||
 				((WEXITSTATUS(stat) != 0) && (spec == SPEC_OR))) {
 				exec_cmd(ex->next);

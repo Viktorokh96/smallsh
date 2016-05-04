@@ -73,7 +73,12 @@ get:p = q = fgets(q,CMD_SIZE,stdin);
 	    	goto get; 											/* это достаточно элегантно. ИМХО */			
 		}
 	} 
-	current_cmd = _STR_DUP(cmd);
+	p = current_cmd = _STR_DUP(cmd);
+	for(p += strlen(cmd)+1; p > current_cmd; p--) if (*p == '\n') {	/* Избавлемся от символа \n */
+		*p = '\0';
+		break;
+	}
+
     return cmd;
 }
 
