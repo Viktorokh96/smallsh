@@ -163,7 +163,7 @@ int exec_cmd (sing_exec *ex)
 #endif 
 		
 	if (ex->handler != NULL) {
-		stat = ex->handler(ex->argv);
+		stat = ex->handler(ex);
 	} else {
 		ex->pid = fork();
 		if (ex->pid == 0) { 		/* Дочерний процесс */
@@ -238,6 +238,7 @@ void update_jobs()
 	tmp != get_head(bg_jobs);
 	tmp = next) { 
 		tsk = (task*) list_entry(tmp); 
+		waitpid(-(tsk->gpid),NULL,WNOHANG);
 		kill(-(tsk->gpid),0);						/* Необходимо проверить работает ли задание */
 		if(errno == ESRCH || tsk->status == TSK_EXITED) { /* удостовериться что группа процессов мертва */
 			printf("Killed -> %d 	%s\n",

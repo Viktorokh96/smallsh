@@ -22,7 +22,7 @@ int pwd_handl(void *prm)
 
 int cd_handl(void *prm)
 {
-	char **argv = (char **) prm;
+	char **argv = (((sing_exec *) prm) -> argv);
 
 	char *past = NULL;
 
@@ -59,7 +59,7 @@ int jobs_handl(void *prm)
 	list *tmp;
 	task *tsk;
 	int show_pid = 0;
-	char **argv = (char **) prm;
+	char **argv = (((sing_exec *) prm) -> argv);
 
 	update_jobs();
 
@@ -86,7 +86,7 @@ int fg_handl(void *prm)
 	int num;
 	int stat;
 	task *tsk = NULL;
-	char **argv = (char **) prm;
+	char **argv = (((sing_exec *) prm) -> argv);
 
 	if (argv[1] != NULL && *argv[1] == '%') {	/* Если пользователь ввел номер процесса */
 		num = atoi(argv[1]+1);
@@ -123,50 +123,27 @@ int kill_handl(void *prm)
 	pid_t pid;
 	int i, num = 0;
 	char pidbuff[10];
-	char **argv = (char **) prm;
+	sing_exec *ex = (sing_exec *) prm;
 
-	for (i = 0; argv[i] != NULL; i++)
-		if (*argv[i] == '%') {
-			num = atoi(argv[i]+1);
+	for (i = 0; ex->argv[i] != NULL; i++)
+		if (*(ex->argv)[i] == '%') {
+			num = atoi(ex->argv[i]+1);
 			if(num > 0 && num <= list_count(bg_jobs)) 
 				tsk = (task *) list_get(num-1,bg_jobs);
 			else {
 				printf("Такой задачи нет %d\n", num );
 				return 1;
 			}
-			free (argv[i]);
+			free (ex->argv[i]);
 			sprintf(pidbuff,"%d",tsk->gpid);
-			argv[i] = _STR_DUP(pidbuff);
+			ex->argv[i] = _STR_DUP(pidbuff);
 			if (tsk->status == TSK_STOPPED)
 				kill(-(tsk->gpid),SIGCONT);
 		}
 
-	/* Выполнение внешней функции */
-	if (arg_list != UNINIT)	list_del(&arg_list);			/* Удаляем старый список */
-	arg_list = init_list();
-	
-	for(i = 0; argv[i] != NULL; i++)						/* Грязный хак */
-		list_add_tail(argv[i],strlen(argv[i])+1,arg_list);
-
-	tsk = create_task();
-	tsk->first-> handler = NULL;
-
-	exec_cmd(tsk->first);		
-
-	i = 1;
-	while (*argv[i] == '-') i++;
-	for(; argv[i] != NULL; i++) {
-		pid = atoi(argv[i]);
-		list_for_each(tmp,get_head(bg_jobs)) {
-			tsk = (task*) list_entry(tmp);
-			if(tsk->gpid == pid) {
-				if (tsk->status == TSK_STOPPED)
-					kill(-(tsk->gpid),SIGCONT);
-				waitpid(-pid,NULL,WNOHANG);				/* сбор "ошмётков" зомби */
-				tsk->status = TSK_KILLED;
-			}
-		}
-	}
+	/* Вызов внешней функции kill */
+	ex->handler = NULL;
+	exec_cmd(ex);
 
 	update_jobs();
 
@@ -175,7 +152,7 @@ int kill_handl(void *prm)
 
 int version_handl(void *prm)
 {
-	printf("Minimalistic interpreter %s, version 0.003.\n",shell_name);
+	printf("Minimalistic interpreter %s, version 0.003\n",shell_name);
 
 	return 0;
 }
