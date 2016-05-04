@@ -208,7 +208,6 @@ int exec_cmd (sing_exec *ex)
 	return (WIFEXITED(stat)) ? WEXITSTATUS(stat) : -1;
 }
 
-
 int wait_child(sing_exec *ex)
 {
 	int child_stat;
@@ -241,6 +240,7 @@ void update_jobs()
 			printf("Killed -> %d 	%s\n",
 					tsk->gpid, tsk->name);
 			next = tmp->mnext;
+			destroy_task((task *) list_entry(tmp));
 			list_del_elem(tmp,bg_jobs);
 		} else {									/* Если процесс таки не завершился */
 			next = tmp->mnext;
@@ -374,6 +374,7 @@ void init_jobs()
 	add_job("kill",kill_handl);
 	add_job("jobs",jobs_handl);
 	add_job("fg",fg_handl);
+	add_job("bg",fg_handl);
 }
 
 void del_jobs()

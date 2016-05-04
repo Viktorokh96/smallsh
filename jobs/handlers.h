@@ -80,13 +80,15 @@ int jobs_handl(void *prm)
 	return 0;
 }
 
-/* Команда для перевода процесса и фонового режима в текущий */
+/* Команда для перевода процесса из фонового режима в текущий */
 int fg_handl(void *prm)
 {
 	int num;
 	int stat;
 	task *tsk = NULL;
 	char **argv = (((sing_exec *) prm) -> argv);
+
+	update_jobs();
 
 	if (argv[1] != NULL && *argv[1] == '%') {	/* Если пользователь ввел номер процесса */
 		num = atoi(argv[1]+1);
@@ -110,6 +112,36 @@ int fg_handl(void *prm)
 		stat = wait_child(tsk->current_ex);
 		exec_next(tsk->current_ex,stat);
 		free(tsk);
+	}
+
+	return 0;
+}
+
+/* Команда для перевода процесса из спящего режима в выполняемый на фоне */
+int bg_handl(void *prm)
+{
+	int num;
+	task *tsk = NULL;
+	char **argv = (((sing_exec *) prm) -> argv);
+
+	update_jobs();
+
+	if (argv[1] != NULL && *argv[1] == '%') {	/* Если пользователь ввел номер процесса */
+		num = atoi(argv[1]+1);
+		if(num > 0 && num <= list_count(bg_jobs)) {
+			tsk = (task *) list_get(num-1,bg_jobs);
+		} else {
+			printf("Такой задачи нет %d\n", num );
+			return 1;
+		}
+	} else if(!list_empty(get_head(bg_jobs))) 
+		tsk = (task *) list_get(0,bg_jobs); /* Иначе выводим первый процесс в списке */
+
+	/* tsk - теперь это оригинал (!) того задания, что есть в спискке bg_jobs */
+	if(tsk != NULL) {
+		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
+			kill(-(tsk->gpid), SIGCONT);
+		tsk->mode = RUN_BACKGR;					/* Перевод в активный режим */
 	}
 
 	return 0;
