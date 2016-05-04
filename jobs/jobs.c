@@ -239,6 +239,7 @@ void update_jobs()
 	tmp = next) { 
 		tsk = (task*) list_entry(tmp); 
 		waitpid(-(tsk->gpid),NULL,WNOHANG);
+		errno = 0;									/* Обязательно обнулить errno от старого значения !!! */
 		kill(-(tsk->gpid),0);						/* Необходимо проверить работает ли задание */
 		if(errno == ESRCH || tsk->status == TSK_EXITED) { /* удостовериться что группа процессов мертва */
 			printf("Killed -> %d 	%s\n",

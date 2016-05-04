@@ -118,9 +118,7 @@ int fg_handl(void *prm)
 /* Перегрузка готовой программы kill, для дополнительного функционала */	
 int kill_handl(void *prm)
 {
-	list *tmp;
 	task *tsk;
-	pid_t pid;
 	int i, num = 0;
 	char pidbuff[10];
 	sing_exec *ex = (sing_exec *) prm;
