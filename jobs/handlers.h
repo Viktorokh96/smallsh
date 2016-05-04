@@ -174,16 +174,14 @@ int kill_handl(void *prm)
 
 	/* Вызов внешней функции kill */
 	ex->handler = NULL;
-	exec_cmd(ex);
-
-	update_jobs();
+	exec_cmd(ex,NO_NEXT);
 
 	return 0;
 }
 
 int version_handl(void *prm)
 {
-	printf("Minimalistic interpreter %s, version 0.003\n",shell_name);
+	printf("Minimalistic interpreter %s, version 0.004\tWelcome!\n",shell_name);
 
 	return 0;
 }
@@ -193,6 +191,24 @@ int declare_handl(void *prm)
 	int i;
 
 	for(i = 0; __environ[i] ; i++) printf("%s\n", _ENVIRON[i]);
+
+	return 0;
+}
+
+int ls_handl(void *prm)
+{
+	int i;
+	sing_exec *ex = (sing_exec *) prm;
+
+	for(i = 0; ex->argv[i] != NULL; i++);
+	ex->argv = realloc(ex->argv,sizeof(char)*(i+1));
+
+	ex->argv[i] = _STR_DUP("--color=auto");
+	ex->argv[i+1] = NULL;
+
+	/* Вызов внешней функции ls */
+	ex->handler = NULL;
+	exec_cmd(ex,NO_NEXT);
 
 	return 0;
 }

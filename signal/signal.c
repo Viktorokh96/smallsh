@@ -70,7 +70,7 @@ int init_signals()
 
 	set_sig_act(SIGINT,&sig_handler,SA_RESTART, &sigset );
 	set_sig_act(SIGTSTP,&sig_handler,SA_RESTART, &sigset);
-	set_sig_act(SIGCHLD,&sig_handler,SA_NODEFER | SA_RESTART , NULL);
+	set_sig_act(SIGCHLD,&sig_handler, SA_NODEFER  |  SA_RESTART , NULL);
 	set_sig_act(SIGQUIT,SIG_IGN,0, NULL);
 
 	return 0;

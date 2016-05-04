@@ -42,6 +42,9 @@
     #define PASS_BACKGR		-1		/* От exec_cmd означает что процесс выполняется в фоновом режиме */
     #define EMPTY_EX		-2		/* Если пустая команда */
 
+    #define NORMAL_NEXT 	1
+    #define NO_NEXT 		2
+
     typedef struct st_task task;
 
 	typedef struct job_st {
@@ -96,8 +99,8 @@
 	/* Подготовка аргументов для команды */
 	void *prepare_args(int num, sing_exec *ex, unsigned mode, list_id list);
 
-	/* Запуск команды */
-	int exec_cmd (sing_exec *ex);
+	/* Запуск команды в режимах: NORMAL_NEXT, NO_NEXT */
+	int exec_cmd (sing_exec *ex,int8_t mode);
 
 	/* Ожидание дочернего процесса */
 	int wait_child(sing_exec *ex);

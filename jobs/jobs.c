@@ -122,12 +122,12 @@ void exec_next(sing_exec *ex, int stat)
 		if((spec = get_from_queue(&(ex->tsk->sp_queue))) != EMPTY_Q) {
 			if (((WEXITSTATUS(stat) == 0) && (spec == SPEC_AND)) ||
 				((WEXITSTATUS(stat) != 0) && (spec == SPEC_OR))) {
-				exec_cmd(ex->next);
+				exec_cmd(ex->next,NORMAL_NEXT);
 			} else {
 				ex->tsk->status =  TSK_EXITED;
 				return;
 			}
-		}
+		} else ex->tsk->status =  TSK_EXITED;
 	} else ex->tsk->status =  TSK_EXITED;
 }
 
@@ -144,7 +144,7 @@ void switch_io(sing_exec *ex)
 }
 
 /* Исполнение команды */
-int exec_cmd (sing_exec *ex)
+int exec_cmd (sing_exec *ex,int8_t mode)
 {
 	int stat;
 
@@ -203,7 +203,8 @@ int exec_cmd (sing_exec *ex)
 		}
 	}
 
-	exec_next(ex,stat);
+	if(mode == NORMAL_NEXT && ex->tsk->mode != RUN_BACKGR)
+		exec_next(ex,stat);
 	update_jobs();								/* Под вопросом */
 	return (WIFEXITED(stat)) ? WEXITSTATUS(stat) : -1;
 }
@@ -237,6 +238,9 @@ void update_jobs()
 		errno = 0;									/* Обязательно обнулить errno от старого значения !!! */
 		kill(-(tsk->gpid),0);						/* Необходимо проверить работает ли задание */
 		if(errno == ESRCH || tsk->status == TSK_EXITED) { /* удостовериться что группа процессов мертва */
+			(tsk->status == TSK_EXITED) ? 
+			printf("Done -> %d 	%s\n",
+					tsk->gpid, tsk->name) :
 			printf("Killed -> %d 	%s\n",
 					tsk->gpid, tsk->name);
 			next = tmp->mnext;
@@ -280,7 +284,7 @@ task *create_task()
 /* Запуск выполнения задания */
 int exec_task(task *tsk)
 {
-	int stat = exec_cmd(tsk->first);
+	int stat = exec_cmd(tsk->first,NORMAL_NEXT);
 	if (tsk -> mode == RUN_BACKGR) {
 		add_bg_task(tsk,bg_jobs); 
 		printf("+1 background -> %d\n", tsk->gpid );
@@ -375,6 +379,7 @@ void init_jobs()
 	add_job("jobs",jobs_handl);
 	add_job("fg",fg_handl);
 	add_job("bg",bg_handl);
+	add_job("ls",ls_handl);
 }
 
 void del_jobs()
