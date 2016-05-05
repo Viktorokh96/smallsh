@@ -7,6 +7,7 @@
 	#include "./jobs/jobs.h"
 	#include <sys/types.h>
 	#include <linux/limits.h>
+	#include <termios.h>
 
 #ifdef	__USE_GNU
 	#define _GETWD(p)	get_current_dir_name (void);
@@ -41,10 +42,16 @@
 	list_id arg_list;
 
 	/* Индетификартор процесса оболочки */
-	pid_t shell_pid;
+	pid_t shell_pgid;
 
 	/* Название оболочки */
 	char *shell_name;
+
+    struct termios shell_tmodes;
+
+	int sh_terminal;
+    
+    int sh_is_interactive;
 
 	/* Получение текущей директории */
 	char *get_curr_path(char* path);

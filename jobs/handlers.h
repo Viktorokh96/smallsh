@@ -10,7 +10,7 @@
 
 int exit_handl(void *prm)
 {
-	end_of_work();
+	end_of_work(EXIT_SUCCESS);
 	return 0;
 }
 

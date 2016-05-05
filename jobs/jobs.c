@@ -176,14 +176,22 @@ int exec_cmd (sing_exec *ex,int8_t mode)
 		}
 		else {									/* Родитель (оболочка) */ 
 			if(tsk->first == ex) {
-				_SETPGID(ex->pid,ex->pid);		/* Создаём новую группу процессов (ВАЖНО) */
+				_SETPGID(ex->pid,0);			/* Создаём новую группу процессов (ВАЖНО) */
 				tsk->gpid = ex->pid;
 				tsk->status = TSK_RUNNING;		/* Задание выполняется */
 			} else {
-				_SETPGID(tsk->gpid,ex->pid);/* Присоединяем процесс к уже созданной группе */
+				_SETPGID(ex->pid,tsk->gpid);	/* Присоединяем процесс к уже созданной группе */
 			}
 
+			if(errno != 0) perror("cmd:");
+
 			tsk -> current_ex = ex;				/* Установка текущей команды */
+
+
+			printf("SHELL PID -> %d\n", shell_pgid );	
+			printf("DEBUG PID -> %d\n", ex->pid );	
+			printf("DEBUG TSK_GPID -> %d\n", ex->tsk->gpid );
+			printf("DEBUG GPID -> %d\n", getpgid(ex->pid));
 
 /* ??? */	current = *tsk;
 

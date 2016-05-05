@@ -33,14 +33,14 @@ void init_shell(unsigned mode, char *argv[])
 
 	/* Поочерёдно иницииализируем все подсистем оболочки */
 	/*ВАЖНО! Независимость систем друг от друга не гарантируется! */
-	if (bit_seted(mode,SIGNAL)) {	
-		init_signals();
+	if (bit_seted(mode,GENERAL)) {
+		init_general();
 	}
 	if (bit_seted(mode,JOBS)) {
 		init_jobs();
 	}
-	if (bit_seted(mode,GENERAL)) {
-		init_general();
+	if (bit_seted(mode,SIGNAL)) {	
+		init_signals();
 	}
 	if (bit_seted(mode,LIST)) {
 		arg_list = UNINIT;
@@ -109,9 +109,9 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-void end_of_work()
+void end_of_work(int status)
 {
 	del_general();
 	del_jobs();
-	_exit(EXIT_SUCCESS);
+	_exit(status);
 }
