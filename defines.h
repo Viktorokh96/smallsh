@@ -6,11 +6,6 @@
 #define STR_SIZE	128
 #define Q_LENG		128			
 
-/* Возможные специальные условия выполнения */
-#define NO_SPEC		0x0000
-#define SPEC_AND	0x0001		/* && */
-#define SPEC_OR		0x0002		/* || */
-
 /* Режимы инициализации для init_shell() */
 #define SIGNAL		0x0001
 #define JOBS		0x0002

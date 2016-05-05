@@ -29,6 +29,14 @@
 		#define _SETPGID(pid,pgid)		setpgid((pid),(pgid))
 	#endif
 
+    #if defined _XOPEN_SOURCE >= 500 || _XOPEN_SOURCE && _XOPEN_SOURCE_EXTENDED \
+    ||  _POSIX_C_SOURCE >= 200809L
+    	#define GET_PGID(pid)			getpgid((pid))
+    #else
+    	#define GET_PGID(pid)			getpgrp((pid))
+    #endif
+
+
     /* Состояния задания */
 	#define	TSK_RUNNING	1
 	#define TSK_STOPPED	2
@@ -42,8 +50,14 @@
     #define PASS_BACKGR		-1		/* От exec_cmd означает что процесс выполняется в фоновом режиме */
     #define EMPTY_EX		-2		/* Если пустая команда */
 
-    #define NORMAL_NEXT 	1
+    /* Возможные специальные условия выполнения */
+	#define NO_EX			0
+	#define AND_EX			1		/* && */
+	#define OR_EX			2		/* || */
+    #define PIPE_EX			3		/* | */
+
     #define NO_NEXT 		2
+    #define NORMAL_NEXT 	1
 
     typedef struct st_task task;
 
@@ -55,8 +69,11 @@
 	typedef struct single_execute {	/* Структура исполняемой единицы */
 		char *name;
 		char **argv;				/* Аргументы исполняемой единицы */
+		int8_t ex_mode;				/* Условие выполнения следующего задания ('&&','||','|' или 0 если нет) */
+#if 1		
 		char *file;					/* Файлы в которые или из которых идёт в\в данных */
 		int8_t ios;					/* Режим перенаправления ввода вывода */
+#endif
 		struct
 			single_execute *next;	/* Следующая исполяемая единица в цепочке */		
 		int (*handler)(void *prm);	/* Указатель на исполнителя, если он есть */
@@ -69,7 +86,7 @@
 		pid_t gpid;					/* Индетификатор задания (группы процессов) */
 		int status;					/* Статус задания (выполняется или остановлен) */
 		int8_t mode;				/* Режим выполнения (фоновый или активный) */
-		struct queue sp_queue;		/* Очередь специальных символов */
+        int stdin, stdout, stderr; 
 		sing_exec *first;
 		sing_exec *current_ex;
 	} task;
@@ -86,12 +103,6 @@
 	void init_jobs();
 	
 	void del_jobs();
-
-	/* Добавление специального исмвола в очередь */
-	void add_spec(int val);
-
-	/* Взятие специального символа из очереди */
-	int  get_spec();
 
 	/* Определение встроенной функции */
 	int (* is_shell_cmd(char *cmd)) (void *);

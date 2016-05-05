@@ -46,11 +46,11 @@ int init_general()
     if (sh_is_interactive)
     {
             while (tcgetpgrp (sh_terminal) !=    
-                    (shell_pgid = getpgrp ()))
+                    (shell_pgid = GET_PGID(0)))
             kill (-shell_pgid, SIGTTIN);
 
             shell_pgid = getpid ();
-            if (setpgid(shell_pgid,shell_pgid) < 0)
+            if (_SETPGID(shell_pgid,shell_pgid) < 0)
             {
                     perror ("Couldn't put the shell in its own process group");
                     _exit (1);

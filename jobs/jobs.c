@@ -12,10 +12,11 @@
 #define go_spec_symb(tmp,num,lid,size)	\
 			do {						\
 				for((tmp) = list_get_header((num),(lid)); (tmp) != get_head((lid)) &&  \
-					(!is_same((tmp),"&&")) && (!is_same((tmp),"||"));			 \
+					(!is_same((tmp),"&&")) && (!is_same((tmp),"|")) && (!is_same((tmp),"||"));	  \
 					(tmp) = (tmp)->mnext) size++;								 \
 			} while(0)
 
+/* Особождение памяти под исп. единицу */
 void free_exec(sing_exec *ex)
 {
 	int i;
@@ -30,6 +31,13 @@ void free_exec(sing_exec *ex)
 	}
 }
 
+void check_ex_mode (sing_exec *ex, char *mode)
+{
+	if(!compare_str(mode,"&&")) ex->ex_mode = AND_EX;
+	else if(!compare_str(mode,"||")) ex->ex_mode = OR_EX;
+	else if(!compare_str(mode,"|")) ex->ex_mode = PIPE_EX;
+	else ex->ex_mode = NO_EX;
+}
 
 /* Подготавливаем аргументы */
 void *prepare_args(int num, sing_exec *ex, unsigned mode, list_id lid)
@@ -41,11 +49,11 @@ void *prepare_args(int num, sing_exec *ex, unsigned mode, list_id lid)
 
 	if (num < 0 || num > list_count(lid)) return NULL;
 
-
 	switch(mode) {
 		case FOR_ARGS:
 			size = 1;
 			go_spec_symb(tmp,num,lid,size);
+			if (tmp != get_head(arg_list)) check_ex_mode(ex,(char *) list_entry(tmp));
 			argv = malloc(size*sizeof(char *));
 			for (i = num; i < num+size-1; i++) {
 				strsize = strlen((char *)list_get(i,lid))+1;
@@ -109,8 +117,6 @@ void destroy_task(task *tsk)
 /* Проверка статуса с последующим выполнением (возвращает 1 если next = NULL) */
 void exec_next(sing_exec *ex, int stat)
 {
-	int spec;
-
 	if (WIFSTOPPED (stat)) return;
 
 	if (ex == NULL) {
@@ -119,9 +125,9 @@ void exec_next(sing_exec *ex, int stat)
 	}
 
 	if (ex->next != NULL) {
-		if((spec = get_from_queue(&(ex->tsk->sp_queue))) != EMPTY_Q) {
-			if (((WEXITSTATUS(stat) == 0) && (spec == SPEC_AND)) ||
-				((WEXITSTATUS(stat) != 0) && (spec == SPEC_OR))) {
+		if(ex -> ex_mode != NO_EX) {
+			if (((WEXITSTATUS(stat) == 0) && (ex -> ex_mode  == AND_EX)) ||
+				((WEXITSTATUS(stat) != 0) && (ex -> ex_mode  == OR_EX))) {
 				exec_cmd(ex->next,NORMAL_NEXT);
 			} else {
 				ex->tsk->status =  TSK_EXITED;
@@ -186,7 +192,6 @@ int exec_cmd (sing_exec *ex,int8_t mode)
 			if(errno != 0) perror("cmd:");
 
 			tsk -> current_ex = ex;				/* Установка текущей команды */
-
 
 			printf("SHELL PID -> %d\n", shell_pgid );	
 			printf("DEBUG PID -> %d\n", ex->pid );	
@@ -260,7 +265,7 @@ void update_jobs()
 	}
 }
  
-int find_spec(int i, list_id lid)
+int find_next_ex(int i, list_id lid)
 {
 	int p = i;
 	list *tmp;
@@ -269,6 +274,7 @@ int find_spec(int i, list_id lid)
 		if (list_entry(tmp) == NULL) return 0;
 		if (is_same(tmp,"&&"))  return p+1; 
 		if (is_same(tmp,"||"))  return p+1; 
+		if (is_same(tmp,"|"))  return p+1; 
 	}
 	return 0;
 }
@@ -282,7 +288,6 @@ task *create_task()
 	tsk -> name = current_cmd;
 	tsk -> gpid = 0;
 	tsk -> status = 0;
-	init_queue(&(tsk -> sp_queue));					/* Инициализация очереди специальных символов */
 	tsk -> first = create_exec_queue(tsk);
 	tsk -> current_ex = NULL;
 
@@ -305,6 +310,7 @@ sing_exec *make_sing_exec(task *tsk,int num,list_id arg_list)
 	sing_exec *ex = NULL;
 	ex = (sing_exec *) malloc(sizeof(sing_exec));
 	ex -> ios = 0;
+	ex -> ex_mode = NO_EX;
 	if (arg_list != UNINIT) {
 		ex -> name = _STR_DUP((char *) list_get(num,arg_list));
 		ex -> file = (char *)  prepare_args(num, ex , FOR_IO, arg_list);	
@@ -324,8 +330,7 @@ sing_exec *make_sing_exec(task *tsk,int num,list_id arg_list)
 sing_exec *create_exec_queue(task *tsk)
 {
 	sing_exec *ex, *past, *next;
-	list *tmp;
-
+	
 	int i = 0;
 
 	if (arg_list == UNINIT) return NULL;
@@ -333,12 +338,6 @@ sing_exec *create_exec_queue(task *tsk)
 
 	tsk->mode = RUN_ACTIVE;							/* По умолчанию */
 	int list_size = list_count(arg_list);
-	
-	/* Первое прохождение */
-	list_for_each(tmp, get_head(arg_list)) {
-		if (is_same(tmp,"&&")) add_to_queue(SPEC_AND,&(tsk->sp_queue));
-		if (is_same(tmp,"||")) add_to_queue(SPEC_OR,&(tsk->sp_queue));
-	}
 
 	if(!compare_str((char *)list_get(list_size-1,arg_list),"&")) {
 				tsk->mode = RUN_BACKGR;
@@ -348,10 +347,10 @@ sing_exec *create_exec_queue(task *tsk)
 	/* Образование самого первого процесса в очереди процессов */
 	ex = make_sing_exec(tsk,0,arg_list);
 
-	if(!queue_empty(tsk->sp_queue)) {				/* Учавствует более одного процесса */
+	if(ex->ex_mode != NO_EX) {				/* Учавствует более одного процесса */
 		past = ex;
 		i = 0;
-		while((i = find_spec(i,arg_list))) {
+		while((i = find_next_ex(i,arg_list))) {
 			next = make_sing_exec(tsk,i,arg_list);
 			past->next = next;
 			past = next;
