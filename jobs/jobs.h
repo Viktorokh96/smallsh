@@ -3,6 +3,7 @@
 	
 	#include <sys/types.h> 	/* Спасибо stackoverflow ( для std=c99 ) */
 	#include <unistd.h>
+	#include <termios.h>
 	#include "../services/list.h"
 	#include "../defines.h"
 
@@ -83,9 +84,10 @@
 
 	typedef struct st_task {		/* Структура задания */
 		char *name;
-		pid_t gpid;					/* Индетификатор задания (группы процессов) */
+		pid_t pgid;					/* Индетификатор задания (группы процессов) */
 		int status;					/* Статус задания (выполняется или остановлен) */
 		int8_t mode;				/* Режим выполнения (фоновый или активный) */
+        struct termios tmodes; 
         int stdin, stdout, stderr; 
 		sing_exec *first;
 		sing_exec *current_ex;
@@ -139,6 +141,10 @@
 
 	/* Освобождение памяти, занятую под задание */
 	void destroy_task(task *tsk);
+
+	void set_task_to_term(task *tsk);
+
+	void unset_task_from_term(task *tsk);
 
 	/* Добавление обработчика встроенной функции оболочки */
 	#define add_job(n,h) 				\

@@ -5,9 +5,6 @@
 #include "../jobs/jobs.h"
 #include "../general.h"
 
-
-#define _SIGSET_T	__sigset_t
-
 void set_sig_act(int signo, __sighandler_t hand, int flags, _SIGSET_T *sigset)
 {									
 	struct sigaction sig_act;			
@@ -20,21 +17,21 @@ void set_sig_act(int signo, __sighandler_t hand, int flags, _SIGSET_T *sigset)
 
 void sig_handler(int signo)
 {
+	pid_t pgid = tcgetpgrp(sh_terminal);
 
 	if (signo == SIGINT) {
 		fflush(stdout);
-		if(current.gpid != 0 && current.gpid != getpid()) {	
-			kill(-current.gpid,SIGINT);
-			current.status = TSK_KILLED;
+
+		if(pgid != 0 && pgid != getpid()) {	
+			kill(-pgid,SIGINT);
 		}
 		printf("\n");
 	}
 
 	if (signo == SIGTSTP) {
 		fflush(stdout);
-		if(current.gpid != 0 && current.gpid != getpid()) {	
-			kill(-current.gpid,SIGTSTP);					
-			current.status = TSK_STOPPED;
+		if(pgid != 0 && pgid != getpid()) {	
+			kill(-pgid,SIGTSTP);					
 		}
 		printf("\n");
 	}

@@ -72,7 +72,7 @@ int jobs_handl(void *prm)
 		printf("[%d]%c %s\t\t%s",i,(i == 1) ? '+' : '-', 
 			(tsk->status == TSK_RUNNING)? 
 			"Running" : "Stopped",tsk->name);
-		if(show_pid) printf("\t\tPID: %d", tsk->gpid);
+		if(show_pid) printf("\t\tPID: %d", tsk->pgid);
 		printf("\n");
 		i++;	
 	}
@@ -106,9 +106,9 @@ int fg_handl(void *prm)
 	/* tsk - теперь это копия того задания, что был в спискке bg_jobs */
 	if(tsk != NULL) {
 		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
-			kill(-(tsk->gpid), SIGCONT);
+			kill(-(tsk->pgid), SIGCONT);
 		tsk->mode = RUN_ACTIVE;					/* Перевод в активный режим */
-		current = *tsk;
+		set_task_to_term(tsk);					/* Привязываем группу процесса к терминалу */
 		stat = wait_child(tsk->current_ex);
 		exec_next(tsk->current_ex,stat);
 		free(tsk);
@@ -140,7 +140,7 @@ int bg_handl(void *prm)
 	/* tsk - теперь это оригинал (!) того задания, что есть в спискке bg_jobs */
 	if(tsk != NULL) {
 		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
-			kill(-(tsk->gpid), SIGCONT);
+			kill(-(tsk->pgid), SIGCONT);
 		tsk->mode = RUN_BACKGR;					/* Перевод в активный режим */
 		tsk->status = TSK_RUNNING;
 	}
@@ -166,10 +166,10 @@ int kill_handl(void *prm)
 				return 1;
 			}
 			free (ex->argv[i]);
-			sprintf(pidbuff,"%d",tsk->gpid);
+			sprintf(pidbuff,"%d",tsk->pgid);
 			ex->argv[i] = _STR_DUP(pidbuff);
 			if (tsk->status == TSK_STOPPED)
-				kill(-(tsk->gpid),SIGCONT);
+				kill(-(tsk->pgid),SIGCONT);
 		}
 
 	/* Вызов внешней функции kill */

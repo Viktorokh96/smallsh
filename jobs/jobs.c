@@ -6,7 +6,11 @@
 #include <wait.h>
 #include <errno.h>
 
+#define DEBUG 0
+
 #define is_same(l,s)	(!compare_str((char *) list_entry((l)), s))
+
+#define tsk_end(tsk)	(tsk)->status =  TSK_EXITED
 
 /* Доходим до специального символа или конца списка */
 #define go_spec_symb(tmp,num,lid,size)	\
@@ -130,11 +134,15 @@ void exec_next(sing_exec *ex, int stat)
 				((WEXITSTATUS(stat) != 0) && (ex -> ex_mode  == OR_EX))) {
 				exec_cmd(ex->next,NORMAL_NEXT);
 			} else {
-				ex->tsk->status =  TSK_EXITED;
+				tsk_end(ex->tsk);
 				return;
 			}
-		} else ex->tsk->status =  TSK_EXITED;
-	} else ex->tsk->status =  TSK_EXITED;
+		} else {
+			tsk_end(ex->tsk);
+		}
+	} else {
+		tsk_end(ex->tsk);
+	}
 }
 
 void switch_io(sing_exec *ex)
@@ -149,6 +157,39 @@ void switch_io(sing_exec *ex)
 	}
 }
 
+/* Разъединение управляющего терминала группе процессов */
+void unset_task_from_term(task *tsk)
+{
+    _SIGSET_T	sigset, oldset;
+	sigemptyset(&sigset);
+	sigaddset (&sigset, SIGTTOU);
+	sigaddset (&sigset, SIGTTIN);
+
+	sigprocmask(SIG_BLOCK,&sigset,&oldset);
+
+   	tcsetpgrp (sh_terminal, shell_pgid);
+    tcgetattr (sh_terminal, &tsk->tmodes);
+    tcsetattr (sh_terminal, TCSADRAIN,           
+            &shell_tmodes);
+	
+	sigprocmask(SIG_SETMASK,&oldset,NULL);
+}
+
+/* Установка управляющего терминала группе процессов */
+void set_task_to_term(task *tsk)
+{	
+    _SIGSET_T	sigset, oldset;
+	sigemptyset(&sigset);
+	sigaddset (&sigset, SIGTTOU);
+	sigaddset (&sigset, SIGTTIN);
+
+	sigprocmask(SIG_BLOCK,&sigset,&oldset);
+
+	tcsetpgrp (sh_terminal, tsk->pgid);
+
+	sigprocmask(SIG_SETMASK,&oldset,NULL);
+}
+
 /* Исполнение команды */
 int exec_cmd (sing_exec *ex,int8_t mode)
 {
@@ -156,13 +197,7 @@ int exec_cmd (sing_exec *ex,int8_t mode)
 
 	if(ex == NULL) return EMPTY_EX;	/* Если пустая команда */
 	
-	task *tsk = ex->tsk;			/* Для краткой записи в дальейшем */
-
-#if 0
-	if (ex->tsk->mode = RUN_BACKGR) {
-		/* Отвязка текущего tty от процесса */
-	}
-#endif 
+	task *tsk = ex->tsk;			/* Для краткой записи в дальнейшем */
 		
 	if (ex->handler != NULL) {
 		stat = ex->handler(ex);
@@ -181,28 +216,17 @@ int exec_cmd (sing_exec *ex,int8_t mode)
 			}
 		}
 		else {									/* Родитель (оболочка) */ 
-			if(tsk->first == ex) {
-				_SETPGID(ex->pid,0);			/* Создаём новую группу процессов (ВАЖНО) */
-				tsk->gpid = ex->pid;
-				tsk->status = TSK_RUNNING;		/* Задание выполняется */
-			} else {
-				_SETPGID(ex->pid,tsk->gpid);	/* Присоединяем процесс к уже созданной группе */
-			}
-
-			if(errno != 0) perror("cmd:");
+			_SETPGID(ex->pid,ex->pid);		
+			tsk->pgid = ex->pid;
+			tsk->status = TSK_RUNNING;			/* Задание выполняется */
+			if(tsk->mode == RUN_ACTIVE)
+				set_task_to_term(tsk);			/* Привязываем группу процесса к терминалу */
 
 			tsk -> current_ex = ex;				/* Установка текущей команды */
 
-			printf("SHELL PID -> %d\n", shell_pgid );	
-			printf("DEBUG PID -> %d\n", ex->pid );	
-			printf("DEBUG TSK_GPID -> %d\n", ex->tsk->gpid );
-			printf("DEBUG GPID -> %d\n", getpgid(ex->pid));
-
-/* ??? */	current = *tsk;
-
 			/* Проверяем выполняется ли эта команда в фоновом задании */
 			if(tsk->mode == RUN_BACKGR) {
-				current.gpid = 0;				/* Фоновый процесс не является текущим */
+
 				return PASS_BACKGR;
 			} 
 			else if(tsk->mode == RUN_ACTIVE) { 
@@ -218,7 +242,6 @@ int exec_cmd (sing_exec *ex,int8_t mode)
 
 	if(mode == NORMAL_NEXT && ex->tsk->mode != RUN_BACKGR)
 		exec_next(ex,stat);
-	update_jobs();								/* Под вопросом */
 	return (WIFEXITED(stat)) ? WEXITSTATUS(stat) : -1;
 }
 
@@ -247,15 +270,15 @@ void update_jobs()
 	tmp != get_head(bg_jobs);
 	tmp = next) { 
 		tsk = (task*) list_entry(tmp); 
-		waitpid(-(tsk->gpid),NULL,WNOHANG);
+		waitpid(-(tsk->pgid),NULL,WNOHANG);
 		errno = 0;									/* Обязательно обнулить errno от старого значения !!! */
-		kill(-(tsk->gpid),0);						/* Необходимо проверить работает ли задание */
+		kill(-(tsk->pgid),0);						/* Необходимо проверить работает ли задание */
 		if(errno == ESRCH || tsk->status == TSK_EXITED) { /* удостовериться что группа процессов мертва */
 			(tsk->status == TSK_EXITED) ? 
 			printf("Done -> %d 	%s\n",
-					tsk->gpid, tsk->name) :
+					tsk->pgid, tsk->name) :
 			printf("Killed -> %d 	%s\n",
-					tsk->gpid, tsk->name);
+					tsk->pgid, tsk->name);
 			next = tmp->mnext;
 			destroy_task((task *) list_entry(tmp));
 			list_del_elem(tmp,bg_jobs);
@@ -286,7 +309,7 @@ task *create_task()
 	task *tsk = (task *) malloc(sizeof(task));
 
 	tsk -> name = current_cmd;
-	tsk -> gpid = 0;
+	tsk -> pgid = 0;
 	tsk -> status = 0;
 	tsk -> first = create_exec_queue(tsk);
 	tsk -> current_ex = NULL;
@@ -300,8 +323,10 @@ int exec_task(task *tsk)
 	int stat = exec_cmd(tsk->first,NORMAL_NEXT);
 	if (tsk -> mode == RUN_BACKGR) {
 		add_bg_task(tsk,bg_jobs); 
-		printf("+1 background -> %d\n", tsk->gpid );
+		printf("+1 background -> %d\n", tsk->pgid );
 	}
+	update_jobs();
+	unset_task_from_term(tsk);					
 	return stat;
 }
 
