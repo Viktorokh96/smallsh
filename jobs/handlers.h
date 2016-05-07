@@ -93,7 +93,7 @@ int fg_handl(void *prm)
 	if (argv[1] != NULL && *argv[1] == '%') {	/* Если пользователь ввел номер процесса */
 		num = atoi(argv[1]+1);
 		if(num > 0 && num <= list_count(bg_jobs)) {
-			tsk = (task *) malloc(sizeof(sing_exec));
+			tsk = (task *) malloc(sizeof(task));
 			memcpy(tsk,(task *) list_get(num-1,bg_jobs),sizeof(task));
 			list_del_elem(list_get_header(num-1,bg_jobs),bg_jobs);
 		} else {
@@ -108,6 +108,7 @@ int fg_handl(void *prm)
 		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
 			kill(-(tsk->pgid), SIGCONT);
 		tsk->mode = RUN_ACTIVE;					/* Перевод в активный режим */
+		printf("%s\n",tsk->name);
 		set_task_to_term(tsk);					/* Привязываем группу процесса к терминалу */
 		stat = wait_child(tsk->current_ex);
 		exec_next(tsk->current_ex,stat);
