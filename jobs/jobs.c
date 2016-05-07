@@ -112,6 +112,15 @@ int try_exec(char *path, sing_exec *ex)
 	return state;
 }
 
+sing_exec *have_ex(task *tsk,pid_t pid)
+{
+	if(tsk == NULL) return NULL;
+
+	sing_exec *ex = tsk-> first;
+	for(;ex != NULL; ex = ex->next) if (ex->pid == pid) return ex;
+	return NULL;
+}
+
 void destroy_task(task *tsk)
 {
 	if(tsk->name != NULL) free(tsk->name);
@@ -132,6 +141,7 @@ void exec_next(sing_exec *ex, int stat)
 		if(ex -> ex_mode != NO_EX) {
 			if (((WEXITSTATUS(stat) == 0) && (ex -> ex_mode  == AND_EX)) ||
 				((WEXITSTATUS(stat) != 0) && (ex -> ex_mode  == OR_EX))) {
+				ex -> ex_mode = NO_EX;				/* На случай если в стеке несколько уровней вызова одной команды */
 				exec_cmd(ex->next,NORMAL_NEXT);
 			} else {
 				tsk_end(ex->tsk);

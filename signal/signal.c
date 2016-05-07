@@ -35,11 +35,20 @@ void sig_handler(int signo)
 		}
 		printf("\n");
 	}
+}
+
+void sigch_handler(int signo, siginfo_t *si, void *ucontext)
+{
 
 	if(signo == SIGCHLD) {
-	#if 0
-		printf("DEBUG MSG : SIGCHLD\n");			/* Отладка */
-	#endif
+		list *tmp;
+		sing_exec *ex;
+		list_for_each(tmp,get_head(bg_jobs)) {
+			if ((ex = have_ex(((task *) list_entry(tmp)),si->si_pid)) != NULL) { 	/* Такой процесс существует в списке фоновых */
+				waitpid(ex->pid,NULL,WNOHANG);
+				exec_next(ex,si->si_status);
+			}
+		}
 	}
 }					
 
@@ -66,10 +75,11 @@ int init_signals()
 	sigemptyset(&sigset);
 	sigaddset (&sigset, SIGINT);
 	sigaddset (&sigset, SIGTSTP);
+	sigaddset (&sigset, SIGQUIT);
 
 	set_sig_act(SIGINT,&sig_handler,SA_RESTART, &sigset );
 	set_sig_act(SIGTSTP,&sig_handler,SA_RESTART, &sigset);
-	set_sig_act(SIGCHLD,&sig_handler, SA_NODEFER  |  SA_RESTART , NULL);
+	set_sig_act(SIGCHLD,&sigch_handler, SA_SIGINFO | SA_RESTART | SA_NODEFER, &sigset);
 	set_sig_act(SIGQUIT,SIG_IGN,0, NULL);
 
 	return 0;

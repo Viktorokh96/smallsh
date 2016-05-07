@@ -142,6 +142,9 @@
 	/* Освобождение памяти, занятую под задание */
 	void destroy_task(task *tsk);
 
+	/* Поиск процесса в задании */
+	sing_exec *have_ex(task *tsk,pid_t pid);
+
 	void set_task_to_term(task *tsk);
 
 	void unset_task_from_term(task *tsk);
