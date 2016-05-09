@@ -157,6 +157,7 @@
 				
 	#define add_bg_task(tsk,stat)								\
 				do {											\
+					(tsk)->mode = RUN_BACKGR;					\
 					(tsk)->status = stat;						\
 					list_add((tsk),sizeof(task),bg_jobs);		\
 				} while (0)

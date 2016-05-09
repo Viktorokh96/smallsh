@@ -229,14 +229,19 @@ int exec_cmd (sing_exec *ex,int8_t mode)
 			_SETPGID(ex->pid,ex->pid);		
 			tsk->pgid = ex->pid;
 			tsk->status = TSK_RUNNING;			/* Задание выполняется */
-			if(tsk->mode == RUN_ACTIVE)
+
+			if(tsk->mode == RUN_ACTIVE 
+				&& tcgetpgrp(sh_terminal) != tsk -> pgid)
 				set_task_to_term(tsk);			/* Привязываем группу процесса к терминалу */
 
 			tsk -> current_ex = ex;				/* Установка текущей команды */
 
 			/* Проверяем выполняется ли эта команда в фоновом задании */
 			if(tsk->mode == RUN_BACKGR) {
-
+				if(ex == tsk -> first) {
+					add_bg_task(tsk,bg_jobs); 
+					printf("+1 background -> %d\n", tsk->pgid );
+				}
 				return PASS_BACKGR;
 			} 
 			else if(tsk->mode == RUN_ACTIVE) { 
@@ -249,6 +254,7 @@ int exec_cmd (sing_exec *ex,int8_t mode)
 			}
 		}
 	}
+
 
 	if(mode == NORMAL_NEXT && ex->tsk->mode != RUN_BACKGR)
 		exec_next(ex,stat);
@@ -283,7 +289,7 @@ void update_jobs()
 		waitpid(-(tsk->pgid),NULL,WNOHANG);
 		errno = 0;									/* Обязательно обнулить errno от старого значения !!! */
 		kill(-(tsk->pgid),0);						/* Необходимо проверить работает ли задание */
-		if(errno == ESRCH || tsk->status == TSK_EXITED) { /* удостовериться что группа процессов мертва */
+		if(tsk->status == TSK_EXITED || errno == ESRCH ) { /* удостовериться что группа процессов мертва */
 			(tsk->status == TSK_EXITED) ? 
 			printf("Done -> %d 	%s\n",
 					tsk->pgid, tsk->name) :
@@ -331,10 +337,6 @@ task *create_task()
 int exec_task(task *tsk)
 {
 	int stat = exec_cmd(tsk->first,NORMAL_NEXT);
-	if (tsk -> mode == RUN_BACKGR) {
-		add_bg_task(tsk,bg_jobs); 
-		printf("+1 background -> %d\n", tsk->pgid );
-	}
 	update_jobs();
 	unset_task_from_term(tsk);					
 	return stat;

@@ -36,7 +36,7 @@ all: $(EXE)
 
 $(EXE) : $(ALLOBJ)
 		$(CC) $^ $(LDFLAGS) -o $@
-		cp $@ $(HOMEPATH) || cp $@ /usr/bin || cp $@ /usr/local/bin
+		cp $@ /usr/bin || cp $@ /usr/local/bin || cp $@ $(HOMEPATH)
 
 $(MAINOBJ) : $(MAINSOURCE)
 		$(CC) $(FLAGS) $^ $(CFLAGS) -o $@

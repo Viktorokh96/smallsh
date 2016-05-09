@@ -108,6 +108,7 @@ int fg_handl(void *prm)
 		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
 			kill(-(tsk->pgid), SIGCONT);
 		tsk->mode = RUN_ACTIVE;					/* Перевод в активный режим */
+		tsk->status = TSK_RUNNING;
 		printf("%s\n",tsk->name);
 		set_task_to_term(tsk);					/* Привязываем группу процесса к терминалу */
 		stat = wait_child(tsk->current_ex);
@@ -142,7 +143,6 @@ int bg_handl(void *prm)
 	if(tsk != NULL) {
 		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
 			kill(-(tsk->pgid), SIGCONT);
-		tsk->mode = RUN_BACKGR;					/* Перевод в активный режим */
 		tsk->status = TSK_RUNNING;
 	}
 
