@@ -380,11 +380,12 @@ sing_exec *create_exec_queue(task *tsk)
 				tsk->mode = RUN_BACKGR;
 				list_connect(list_size-2,list_size,arg_list);		/* Избавляемся от этого символа */
 			}
+			
 	ex = next = NULL;
 	/* Образование самого первого процесса в очереди процессов */
 	ex = make_sing_exec(tsk,0,arg_list);
 
-	if(ex->ex_mode != NO_EX) {				/* Учавствует более одного процесса */
+	if(ex->ex_mode != NO_EX) {				/* Участвует более одного процесса */
 		past = ex;
 		i = 0;
 		while((i = find_next_ex(i,arg_list))) {

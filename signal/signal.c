@@ -21,7 +21,6 @@ void sig_handler(int signo)
 
 	if (signo == SIGINT) {
 		fflush(stdout);
-
 		if(pgid != 0 && pgid != getpid()) {	
 			kill(-pgid,SIGINT);
 		}
@@ -43,10 +42,15 @@ void sigch_handler(int signo, siginfo_t *si, void *ucontext)
 	if(signo == SIGCHLD) {
 		list *tmp;
 		sing_exec *ex;
+		int stat;
 		list_for_each(tmp,get_head(bg_jobs)) {
 			if ((ex = have_ex(((task *) list_entry(tmp)),si->si_pid)) != NULL) { 	/* Такой процесс существует в списке фоновых */
-				waitpid(ex->pid,NULL,WNOHANG);
-				exec_next(ex,si->si_status);
+				waitpid(ex->pid,&stat,WNOHANG);
+				if (WIFSTOPPED (stat)) {
+					ex->tsk->status = TSK_STOPPED;
+					ex->tsk->current_ex = ex;
+				}
+				else exec_next(ex,si->si_status);
 			}
 		}
 	}
