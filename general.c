@@ -6,7 +6,9 @@
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
+#include <string.h>
 #include "general.h"
+#include "./jobs/jobs.h"
 
 char *path_alloc(unsigned char size, char* path) 
 {
@@ -43,27 +45,29 @@ int init_general()
 	sh_terminal = STDIN_FILENO;
     sh_is_interactive = isatty(sh_terminal);
 
+	
     if (sh_is_interactive)
     {
             while (tcgetpgrp (sh_terminal) !=    
                     (shell_pgid = GET_PGID(0)))
             kill (-shell_pgid, SIGTTIN);
+            tcsetpgrp (sh_terminal, shell_pgid);
+            tcgetattr(sh_terminal,&shell_tmodes);
 
-            shell_pgid = getpid ();
             if (_SETPGID(shell_pgid,shell_pgid) < 0)
             {
                     perror ("Couldn't put the shell in its own process group");
                     _exit (1);
             }
-            tcsetpgrp (sh_terminal, shell_pgid);
-            tcgetattr(sh_terminal,&shell_tmodes);
-    }
 
-	path_list = init_list();
+    }
+    
+	init_table(&past_path,5);
 
 	curr_path = get_curr_path(curr_path);
 
-	list_add(curr_path,strlen(curr_path)+1,path_list);
+	if(curr_path != NULL)
+		table_add(_STR_DUP(curr_path),&past_path);
 
 	home_path = getenv("HOME");
 	user_name = getpwuid(geteuid())->pw_name;				/* Получаем имя пользователя */
@@ -73,6 +77,5 @@ int init_general()
 
 void del_general()
 {
-	list_del(&arg_list);
-	list_del(&path_list);
+	del_table(&past_path, FREE_CONT);
 }

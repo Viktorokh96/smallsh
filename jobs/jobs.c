@@ -8,17 +8,16 @@
 
 #define DEBUG 0
 
-#define is_same(l,s)	(!compare_str((char *) list_entry((l)), s))
-
 #define tsk_end(tsk)	(tsk)->status =  TSK_EXITED
 
-/* Доходим до специального символа или конца списка */
-#define go_spec_symb(tmp,num,lid,size)	\
-			do {						\
-				for((tmp) = list_get_header((num),(lid)); (tmp) != get_head((lid)) &&  \
-					(!is_same((tmp),"&&")) && (!is_same((tmp),"|")) && (!is_same((tmp),"||"));	  \
-					(tmp) = (tmp)->mnext) size++;								 \
-			} while(0)
+/* Добавление обработчика встроенной функции оболочки */
+#define add_job(n,h) 				\
+		do {						\
+			job *job_sh = malloc(sizeof(job));	\
+			job_sh -> name = (n); 		\
+			job_sh -> handler = &(h); 	\
+			table_add(job_sh,&sh_jobs); \
+		} while(0)
 
 /* Особождение памяти под исп. единицу */
 void free_exec(sing_exec *ex)
@@ -33,66 +32,6 @@ void free_exec(sing_exec *ex)
 		if(ex->file != NULL) free(ex->file);
 		if(ex->next != NULL) free_exec(ex->next);
 	}
-}
-
-void check_ex_mode (sing_exec *ex, char *mode)
-{
-	if(!compare_str(mode,"&&")) ex->ex_mode = AND_EX;
-	else if(!compare_str(mode,"||")) ex->ex_mode = OR_EX;
-	else if(!compare_str(mode,"|")) ex->ex_mode = PIPE_EX;
-	else ex->ex_mode = NO_EX;
-}
-
-/* Подготавливаем аргументы */
-void *prepare_args(int num, sing_exec *ex, unsigned mode, list_id lid)
-{
-	char **argv;
-	char *filename;
-	int i, size, strsize;
-	list *tmp;
-
-	if (num < 0 || num > list_count(lid)) return NULL;
-
-	switch(mode) {
-		case FOR_ARGS:
-			size = 1;
-			go_spec_symb(tmp,num,lid,size);
-			if (tmp != get_head(arg_list)) check_ex_mode(ex,(char *) list_entry(tmp));
-			argv = malloc(size*sizeof(char *));
-			for (i = num; i < num+size-1; i++) {
-				strsize = strlen((char *)list_get(i,lid))+1;
-				argv[i-num] = malloc(strsize*sizeof(char));
-				memcpy(argv[i-num],(char *)list_get(i,lid),strsize);
-			}
-
-			/* Список всегда должен завершать NULL */
-			argv[i-num] = NULL;
-
-			return argv;
-
-		case FOR_IO:
-			size = 1;
-			go_spec_symb(tmp,num,lid,size);
-			for (i = num; i < num+size-1; i++) {
-				if(!compare_str((char *)list_get(i,lid),"<") &&
-			 		list_get(i+1,lid) != NULL) {
-					filename = _STR_DUP((char *)list_get(i+1,lid));
-					list_connect(i-1,i+2,lid);		/* Избавляемся от этих аргументов */
-					set_bit(ex->ios,IO_IN);
-					return filename;
-				}
-				if(!compare_str((char *)list_get(i,lid),">") &&
-			 		list_get(i+1,lid) != NULL) {
-					filename = _STR_DUP((char *)list_get(i+1,lid));
-					list_connect(i-1,i+2,lid);		/* Избавляемся от этих аргументов */
-					set_bit(ex->ios,IO_OUT);
-					return filename;
-				}
-			}
-			return NULL;
-		default: return NULL;
-	}
-	return NULL;
 }
 
 /* Попытка запуска исполняемого фаайла */
@@ -239,7 +178,7 @@ int exec_cmd (sing_exec *ex,int8_t mode)
 			/* Проверяем выполняется ли эта команда в фоновом задании */
 			if(tsk->mode == RUN_BACKGR) {
 				if(ex == tsk -> first) {
-					add_bg_task(tsk,bg_jobs); 
+					add_bg_task(tsk,TSK_RUNNING); 
 					printf("+1 background -> %d\n", tsk->pgid );
 				}
 				return PASS_BACKGR;
@@ -279,45 +218,24 @@ int wait_child(sing_exec *ex)
 
 void update_jobs()
 {
-	list *tmp, *next;
+	int i;
 	task *tsk;
 
-	for (tmp = get_head(bg_jobs)->mnext; 
-	tmp != get_head(bg_jobs);
-	tmp = next) { 
-		tsk = (task*) list_entry(tmp); 
+	for (i = 0; i < bg_jobs.elem_quant;) { 
+		tsk = (task*) table_get(i,&bg_jobs); 
 		waitpid(-(tsk->pgid),NULL,WNOHANG);
 		errno = 0;									/* Обязательно обнулить errno от старого значения !!! */
 		kill(-(tsk->pgid),0);						/* Необходимо проверить работает ли задание */
-		if(tsk->status == TSK_EXITED || errno == ESRCH ) { /* удостовериться что группа процессов мертва */
-			(tsk->status == TSK_EXITED) ? 
-			printf("Done -> %d 	%s\n",
-					tsk->pgid, tsk->name) :
+		if(tsk->status == TSK_EXITED || errno == ESRCH ) { /* удостовериться что группа процессов мертва */ 
 			printf("Killed -> %d 	%s\n",
 					tsk->pgid, tsk->name);
-			next = tmp->mnext;
-			destroy_task((task *) list_entry(tmp));
-			list_del_elem(tmp,bg_jobs);
+			destroy_task(tsk);
+			table_del(i,&bg_jobs);
 		} else {									/* Если процесс таки не завершился */
-			next = tmp->mnext;
+			i++;
 		}	
 	}
 }
- 
-int find_next_ex(int i, list_id lid)
-{
-	int p = i;
-	list *tmp;
-	list_for_each(tmp,list_get_header(i,lid)) {
-		p++;
-		if (list_entry(tmp) == NULL) return 0;
-		if (is_same(tmp,"&&"))  return p+1; 
-		if (is_same(tmp,"||"))  return p+1; 
-		if (is_same(tmp,"|"))  return p+1; 
-	}
-	return 0;
-}
-
 
 /* Создание нового задания */
 task *create_task()
@@ -342,23 +260,49 @@ int exec_task(task *tsk)
 	return stat;
 }
 
-sing_exec *make_sing_exec(task *tsk,int num,list_id arg_list)
+void check_ex_mode (sing_exec *ex, char *mode)
+{
+	if(!strcmp(mode,"&&")) ex->ex_mode = AND_EX;
+	else if(!strcmp(mode,"||")) ex->ex_mode = OR_EX;
+	else if(!strcmp(mode,"|")) ex->ex_mode = PIPE_EX;
+	else ex->ex_mode = NO_EX;
+}
+
+int select_ex(sing_exec *ex,int *num)
+{
+	int i;
+	
+	if(*num < 0 || *num > arg_vec.elem_quant) return -1;
+
+	for (i = *num; i < arg_vec.elem_quant; i++) {
+		if (!strcmp((char *) table_get(i,&arg_vec),"&&") 
+		 || !strcmp((char *) table_get(i,&arg_vec),"||") 
+		 || !strcmp((char *) table_get(i,&arg_vec),"|")) {
+		 	check_ex_mode (ex,(char *) table_get(i,&arg_vec));
+			table_set(i,NULL,&arg_vec);
+			return i+1;
+		}
+	}
+
+	ex -> ex_mode = NO_EX;
+	return *num;	/* Если не найдено ни одного выражения */
+} 
+
+sing_exec *make_sing_exec(task *tsk,int *num)
 {
 	sing_exec *ex = NULL;
 	ex = (sing_exec *) malloc(sizeof(sing_exec));
 	ex -> ios = 0;
-	ex -> ex_mode = NO_EX;
-	if (arg_list != UNINIT) {
-		ex -> name = _STR_DUP((char *) list_get(num,arg_list));
-		ex -> file = (char *)  prepare_args(num, ex , FOR_IO, arg_list);	
-		ex -> argv = (char **) prepare_args(num, ex,  FOR_ARGS, arg_list);
-	} else {
-		fprintf(stderr, "Ошибка make_sing_exec! Не инициализирован список аргументов! \n");
-		return NULL;
-	}
+	ex -> name = _STR_DUP((char *) table_get(*num,&arg_vec));
+	ex -> file = NULL; /* Временно */
+	ex -> argv = (char **) (arg_vec.pointers + *num);
+
 	ex -> handler = is_shell_cmd(ex->name);	/* Проверяем, встроена ли функция в оболочку */
 	ex -> tsk = tsk;							/* Указываем на принадлежность к заданию */
 	ex -> next = NULL;
+
+	/* Выделяем исполняемую единицу из таблицы аргументов */
+	*num = select_ex(ex,num);
 
 	return ex;
 }
@@ -368,58 +312,64 @@ sing_exec *create_exec_queue(task *tsk)
 {
 	sing_exec *ex, *past, *next;
 	
-	int i = 0;
+	int num, p_num;
 
-	if (arg_list == UNINIT) return NULL;
-	if (list_empty(get_head(arg_list))) return NULL;
+	if (arg_vec.elem_quant == 0) return NULL;
 
 	tsk->mode = RUN_ACTIVE;							/* По умолчанию */
-	int list_size = list_count(arg_list);
 
-	if(!compare_str((char *)list_get(list_size-1,arg_list),"&")) {
-				tsk->mode = RUN_BACKGR;
-				list_connect(list_size-2,list_size,arg_list);		/* Избавляемся от этого символа */
-			}
+	if(!strcmp((char *) table_get(arg_vec.elem_quant-1,&arg_vec),"&")) {
+		tsk->mode = RUN_BACKGR;
+		table_del(arg_vec.elem_quant-1,&arg_vec);
+	}
 			
 	ex = next = NULL;
+	num = p_num = 0;
+
 	/* Образование самого первого процесса в очереди процессов */
-	ex = make_sing_exec(tsk,0,arg_list);
+	ex = make_sing_exec(tsk,&num);
 
 	if(ex->ex_mode != NO_EX) {				/* Участвует более одного процесса */
 		past = ex;
-		i = 0;
-		while((i = find_next_ex(i,arg_list))) {
-			next = make_sing_exec(tsk,i,arg_list);
+		while(p_num != num) {
+			p_num = num;
+			next = make_sing_exec(tsk,&num);
 			past->next = next;
 			past = next;
 		}
 	}
+
+	table_add(NULL,&arg_vec);				/* Список аргументов всегда завершает NULL */
+
 	return ex;
 }
 
 /* Поиск встроенной команды оболочки */
 int (* is_shell_cmd(char *cmd)) (void *)
 {
-	list *tmp;
-	list_for_each(tmp,get_head(sh_jobs)) {
-		if (!compare_str(((job *)list_entry(tmp)) -> name, cmd)) 
-			return ((job *)list_entry(tmp)) -> handler;
+	int i;
+
+	for (i = 0 ;i < sh_jobs.elem_quant; i++) {
+		if (!strcmp(((job *)table_get(i,&sh_jobs)) -> name,cmd))
+			return ((job *)table_get(i,&sh_jobs)) -> handler;
 	}
+
 	return NULL;
 }
 
 /* Инициализация встроенных обработчиков */
 void init_jobs()
 {
-	sh_jobs = init_list();
-	bg_jobs = init_list();
+	init_table(&sh_jobs,1);
+	init_table(&bg_jobs,5);
+	init_table(&arg_vec,5);
 
 	add_job("exit",	exit_handl);
 	add_job("pwd",	pwd_handl);
 	add_job("cd",	cd_handl);
 	add_job("version", version_handl);
 	add_job("meow",meow_handl);
-	add_job("declare",declare_handl)
+	add_job("declare",declare_handl);
 	add_job("kill",kill_handl);
 	add_job("jobs",jobs_handl);
 	add_job("fg",fg_handl);
@@ -429,6 +379,7 @@ void init_jobs()
 
 void del_jobs()
 {
-	list_del(&sh_jobs);
-	list_del(&bg_jobs);
+	del_table(&arg_vec, FREE_CONT);
+	del_table(&sh_jobs, FREE_CONT);
+	del_table(&bg_jobs, FREE_CONT);
 }

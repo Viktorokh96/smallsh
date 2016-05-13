@@ -15,18 +15,18 @@ LDFLAGS = $(LIBS)
 GENERALSRC = general.c
 MAINSOURCE = shell.c 
 PARSESRC = parse.c
-LISTSRC = list.c
 JOBSSRC = jobs.c
 SIGNALSRC = signal.c
+TABLESRC = table.c
 # Объектные файлы 
 MAINOBJ = $(patsubst %.c,%.o,$(MAINSOURCE))
 PARSEOBJ = $(patsubst %.c,%.o,$(PARSESRC))
-LISTOBJ = $(patsubst %.c,%.o,$(LISTSRC))
 JOBSOBJ = $(patsubst %.c,%.o,$(JOBSSRC))
 GENERALOBJ = $(patsubst %.c,%.o,$(GENERALSRC))
 SIGNALOBJ = $(patsubst %.c,%.o,$(SIGNALSRC))
+TABLEOBJ = $(patsubst %.c,%.o,$(TABLESRC))
 
-ALLOBJ	= $(SIGNALOBJ) $(GENERALOBJ) $(JOBSOBJ) $(LISTOBJ) $(PARSEOBJ) $(MAINOBJ)
+ALLOBJ	= $(TABLEOBJ) $(SIGNALOBJ) $(GENERALOBJ) $(JOBSOBJ) $(PARSEOBJ) $(MAINOBJ)
 
 HOMEPATH = $(HOME)/bin/
 
@@ -42,10 +42,7 @@ $(MAINOBJ) : $(MAINSOURCE)
 		$(CC) $(FLAGS) $^ $(CFLAGS) -o $@
 
 $(PARSEOBJ) : $(PARSESRC)
-		$(CC) $(FLAGS) $^ $(CFLAGS) -o $@
-
-$(LISTOBJ) : $(LISTSRC)
-		$(CC) $(FLAGS) $^ $(CFLAGS) -o $@				
+		$(CC) $(FLAGS) $^ $(CFLAGS) -o $@		
 
 $(JOBSOBJ) : $(JOBSSRC)
 		$(CC) $(FLAGS) $^ $(CFLAGS) -o $@				
@@ -55,6 +52,9 @@ $(GENERALOBJ) : $(GENERALSRC)
 
 $(SIGNALOBJ) : $(SIGNALSRC)
 		$(CC) $(FLAGS) $^ $(CFLAGS) -o $@				
-		
+
+$(TABLEOBJ) : $(TABLESRC)
+		$(CC) $(FLAGS) $^ $(CFLAGS) -o $@				
+
 clean : 
 		rm -f $(ALLOBJ) | rm $(EXE)

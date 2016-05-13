@@ -14,7 +14,6 @@
 #include <errno.h>
 #include "defines.h"
 #include "services/bits.h"
-#include "services/list.h"
 #include "./parses/parse.h"
 #include "./jobs/jobs.h"
 #include "./signal/signal.h"
@@ -22,7 +21,7 @@
 #include "shell.h"
 
 /* Инициализация служебных систем оболочки */
-void init_shell(unsigned mode, char *argv[])
+void init_shell(char *argv[])
 {	
 	/* Здесь обрабатываюсь аргументы, полученные от пользователя при запуске оболчки */
 	char *p;
@@ -31,20 +30,9 @@ void init_shell(unsigned mode, char *argv[])
 	for(;(shell_name != p) && 		/* Получаем полное имя процесса оболочки */
 		(*(shell_name-1) != CH_DIR_SEP); shell_name--);
 
-	/* Поочерёдно иницииализируем все подсистем оболочки */
-	/*ВАЖНО! Независимость систем друг от друга не гарантируется! */
-	if (bit_seted(mode,GENERAL)) {
-		init_general();
-	}
-	if (bit_seted(mode,JOBS)) {
-		init_jobs();
-	}
-	if (bit_seted(mode,SIGNAL)) {	
-		init_signals();
-	}
-	if (bit_seted(mode,LIST)) {
-		arg_list = UNINIT;
-	}
+	init_general();
+	init_jobs();
+	init_signals();
 }
 
 /* Запуск команды */
@@ -94,7 +82,7 @@ int main(int argc, char *argv[])
 	char command[CMD_SIZE];
 	char *cmd;											/* Указатель на следующую команду */
 	
-	init_shell(SIGNAL | JOBS | GENERAL | LIST , argv);
+	init_shell(argv);
 	
 	for(;;) {
 		clear_cmd_buff(command);					 	/* Принудительная очистка буффера команд */

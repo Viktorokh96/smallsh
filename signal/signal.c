@@ -40,11 +40,11 @@ void sigch_handler(int signo, siginfo_t *si, void *ucontext)
 {
 
 	if(signo == SIGCHLD) {
-		list *tmp;
+		int i;
 		sing_exec *ex;
 		int stat;
-		list_for_each(tmp,get_head(bg_jobs)) {
-			if ((ex = have_ex(((task *) list_entry(tmp)),si->si_pid)) != NULL) { 	/* Такой процесс существует в списке фоновых */
+		for (i = 0; i < bg_jobs.elem_quant; i++ ) {
+			if ((ex = have_ex(((task *) table_get(i,&bg_jobs)),si->si_pid)) != NULL) { 	/* Такой процесс существует в списке фоновых */
 				waitpid(ex->pid,&stat,WNOHANG);
 				if (WIFSTOPPED (stat)) {
 					ex->tsk->status = TSK_STOPPED;

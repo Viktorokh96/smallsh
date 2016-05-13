@@ -13,13 +13,10 @@ char *parse_cmd(char *cmd)
 	char *tmp;
 	char *p,*q;
 
-
-	/* Удаляем старый список */
-	if (arg_list != UNINIT)	list_del(&arg_list);
+	/* Удаляем старую таблицу */
+	while(arg_vec.elem_quant != 0) table_del(0,&arg_vec);
 
 	if(cmd == NULL) return NULL;
-	
-	arg_list = init_list();
 
 	for (p = q = cmd; (*p != '\n') && (*p != '\0');) {
 		look_further(p);	/* Пропускаем пробелы если есть */
@@ -34,7 +31,7 @@ char *parse_cmd(char *cmd)
 				if(q-1 < cmd || *(q-1) != ESCAPING) {
 					*q = 0;
 					tmp = _STR_DUP(p);
-					list_add_tail(tmp,strlen(tmp)+1,arg_list);	
+					table_add(tmp,&arg_vec);	
 					return q + 1;
 				} else {
 					p += 1;
@@ -43,7 +40,7 @@ char *parse_cmd(char *cmd)
 			} 
 			*q = 0;
 			tmp = _STR_DUP(p);
-			list_add_tail(tmp,strlen(tmp)+1,arg_list);
+			table_add(tmp,&arg_vec);	
 			if(*(q+1)) p = q+1;
 			else p = q;
 		} 
@@ -65,23 +62,6 @@ char *find_exec(char **path, char *execf)
 	strncat(*path, DIR_SEP, 1);
 	strncat(*path, execf, strlen(execf));
 	return q;
-}
-
-int compare_str(char *str1, char *str2)
-{
-	char *p = str1;
-	char *q = str2;
-
-	if ((p == NULL) || (q == NULL)) { 
-		fprintf(stderr, "Передача NULL строки в функцию compare_str! \
-			Фатальная ошибка!\n");
-		return 1;
-	}
-
-	for(;(*p) && (*q);p++,q++) if (*p != *q) return 1;
-	if((*p == '\0') ^ (*q == '\0')) return 1;
-
-	return 0;
 }
 
 char *short_path(char *path)

@@ -4,7 +4,7 @@
 	#include <sys/types.h> 	/* Спасибо stackoverflow ( для std=c99 ) */
 	#include <unistd.h>
 	#include <termios.h>
-	#include "../services/list.h"
+	#include "../services/table.h"
 	#include "../defines.h"
 
 	#if defined  _SVID_SOURCE || _BSD_SOURCE || _XOPEN_SOURCE >= 500 \
@@ -93,14 +93,14 @@
 		sing_exec *current_ex;
 	} task;
 
-	job job_sh; 		/* Структура для описания обработчика встроенной функции */
+	/* Таблица выполняемых программ оболочки */
+	addr_table sh_jobs;
 
-	/* Список выполняемых программ оболочки */
-	list_id sh_jobs;
+	/* Таблица программ выполняющихся в фоновом режиме */
+	addr_table bg_jobs;
 
-	/* Список программ выполняющихся в фоновом режиме */
-	list_id bg_jobs;
-
+	/* Таблицы аргументов в команде */ 
+	addr_table arg_vec;
 
 	void init_jobs();
 	
@@ -110,7 +110,7 @@
 	int (* is_shell_cmd(char *cmd)) (void *);
 
 	/* Подготовка аргументов для команды */
-	void *prepare_args(int num, sing_exec *ex, unsigned mode, list_id list);
+	void *prepare_args(int num, sing_exec *ex, unsigned mode);
 
 	/* Запуск команды в режимах: NORMAL_NEXT, NO_NEXT */
 	int exec_cmd (sing_exec *ex,int8_t mode);
@@ -123,9 +123,6 @@
 
 	/* Содание очереди на исполнение */
 	sing_exec *create_exec_queue(task *tsk);
-
-	/* Инициализация команды */
-	sing_exec *make_sing_exec(task *tsk,int num,list_id arg_list);
 
 	/* Создание нового задания */
 	task *create_task();
@@ -148,18 +145,12 @@
 	void set_task_to_term(task *tsk);
 
 	void unset_task_from_term(task *tsk);
-
-	/* Добавление обработчика встроенной функции оболочки */
-	#define add_job(n,h) 				\
-				job_sh.name = (n); 		\
-				job_sh.handler = &(h); 	\
-				list_add(&job_sh,sizeof(job),sh_jobs);
 				
 	#define add_bg_task(tsk,stat)								\
 				do {											\
 					(tsk)->mode = RUN_BACKGR;					\
 					(tsk)->status = stat;						\
-					list_add((tsk),sizeof(task),bg_jobs);		\
+					table_add((tsk),&bg_jobs);		\
 				} while (0)
 
 #endif

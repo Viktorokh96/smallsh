@@ -3,7 +3,6 @@
 
 #include "../defines.h"
 #include "../services/bits.h"
-#include "../services/list.h"
 #include "../jobs/jobs.h"
 #include "../general.h"
 
@@ -22,9 +21,6 @@ char *parse_cmd(char *cmd);
 
 /* Функция, разбивающая строку на пути поиска исполняемых файлов */
 char *find_exec(char **path, char *execf);
-
-/* Она медленнее, но должна быть стабильнее */
-int compare_str(char *str1, char *str2);
 
 /* Обрезка полного пути для удобства */
 char *short_path(char *path);

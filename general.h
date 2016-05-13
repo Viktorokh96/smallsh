@@ -2,9 +2,8 @@
 #define GENERAL_H
 	#include <unistd.h>
 	#include <stdlib.h>
-	#include "./services/list.h"
+	#include "./services/table.h"
 	#include "./defines.h"
-	#include "./jobs/jobs.h"
 	#include <sys/types.h>
 	#include <linux/limits.h>
 	#include <termios.h>
@@ -33,10 +32,7 @@
 	char *current_cmd;
 
 	/* Предыдущая директория */
-	list_id path_list;
-
-	/* Список аргументов в команде */ 
-	list_id arg_list;
+	addr_table past_path;
 
 	/* Индетификартор процесса оболочки */
 	pid_t shell_pgid;

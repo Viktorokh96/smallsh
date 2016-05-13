@@ -2,6 +2,7 @@
 #define HANDLER_H
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <wait.h>
 #include "../general.h"
 #include "../shell.h"
@@ -28,18 +29,25 @@ int cd_handl(void *prm)
 
 	if (argv != NULL) {
 		if (argv[1] != NULL) {
-			if (!compare_str(argv[1],"-b")) {
-				past = (char *) list_pop(path_list);
-				if(!list_empty(get_head(path_list))) chdir(past);
+			if (!strcmp(argv[1],"-b")) {
+				if (past_path.elem_quant != 0) {
+					past = (char *) table_get(past_path.elem_quant-1,&past_path);
+					table_del(past_path.elem_quant-1,&past_path);
+					if(past != NULL) {
+						chdir(past);
+						free(past);
+					}	
+				}
 			} 
 			else { 
-				list_add(curr_path,strlen(curr_path)+1,path_list);
+				table_add(_STR_DUP(curr_path),&past_path);
 				if(chdir(full_path(argv[1])) != 0) { 
 					printf("Такого каталога нет!\n");
 					return 1;
 				}
 			}
 		} else {
+			table_add(_STR_DUP(curr_path),&past_path);
 			if(chdir(full_path(home_path)) != 0) { 
 					printf("Такого каталога нет!\n");
 					return 1;
@@ -56,7 +64,6 @@ int cd_handl(void *prm)
 int jobs_handl(void *prm)
 {
 	int i;
-	list *tmp;
 	task *tsk;
 	int show_pid = 0;
 	char **argv = (((sing_exec *) prm) -> argv);
@@ -64,17 +71,15 @@ int jobs_handl(void *prm)
 	update_jobs();
 
 	for(i = 0; argv[i] != NULL; i++) 
-		if(!compare_str(argv[i],"-i")) show_pid = 1;
+		if(!strcmp(argv[i],"-i")) show_pid = 1;
 	
-	i = 1;
-	list_for_each(tmp,get_head(bg_jobs)) {
-		tsk = (task *) list_entry(tmp);
-		printf("[%d]%c %s\t\t%s",i,(i == 1) ? '+' : '-', 
+	for(i = 0; i < bg_jobs.elem_quant; i++) {
+		tsk = (task *) table_get(i,&bg_jobs);
+		printf("[%d]%c %s\t\t%s",i+1,(i+1 == 1) ? '+' : '-', 
 			(tsk->status == TSK_RUNNING)? 
 			"Running" : "Stopped",tsk->name);
 		if(show_pid) printf("\t\tPID: %d", tsk->pgid);
 		printf("\n");
-		i++;	
 	}
 
 	return 0;
@@ -92,18 +97,20 @@ int fg_handl(void *prm)
 
 	if (argv[1] != NULL && *argv[1] == '%') {	/* Если пользователь ввел номер процесса */
 		num = atoi(argv[1]+1);
-		if(num > 0 && num <= list_count(bg_jobs)) {
-			tsk = (task *) malloc(sizeof(task));
-			memcpy(tsk,(task *) list_get(num-1,bg_jobs),sizeof(task));
-			list_del_elem(list_get_header(num-1,bg_jobs),bg_jobs);
+		if(num > 0 && num <= bg_jobs.elem_quant) {
+			tsk = (task *) table_get(num-1,&bg_jobs);
+			table_del(num-1,&bg_jobs);
 		} else {
 			printf("Такой задачи нет %d\n", num );
 			return 1;
 		}
-	} else if(!list_empty(get_head(bg_jobs))) 
-		tsk = (task *) list_pop(bg_jobs); /* Иначе выводим первый процесс в списке */
+	} else if(bg_jobs.elem_quant != 0) {
+		/* Иначе выводим первый процесс в списке */
+		tsk = (task *) table_get(0,&bg_jobs);
+		table_del(0,&bg_jobs);
+	}
 
-	/* tsk - теперь это копия того задания, что был в спискке bg_jobs */
+	/* tsk - теперь это копия того задания, что был в таблице bg_jobs */
 	if(tsk != NULL) {
 		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
 			kill(-(tsk->pgid), SIGCONT);
@@ -130,16 +137,17 @@ int bg_handl(void *prm)
 
 	if (argv[1] != NULL && *argv[1] == '%') {	/* Если пользователь ввел номер процесса */
 		num = atoi(argv[1]+1);
-		if(num > 0 && num <= list_count(bg_jobs)) {
-			tsk = (task *) list_get(num-1,bg_jobs);
+		if(num > 0 && num <= bg_jobs.elem_quant) {
+			tsk = (task *) table_get(num-1,&bg_jobs);
 		} else {
 			printf("Такой задачи нет %d\n", num );
 			return 1;
 		}
-	} else if(!list_empty(get_head(bg_jobs))) 
-		tsk = (task *) list_get(0,bg_jobs); /* Иначе выводим первый процесс в списке */
+	} else if(bg_jobs.elem_quant != 0)
+		/* Иначе выводим первый процесс в списке */
+		tsk = (task *) table_get(0,&bg_jobs);
 
-	/* tsk - теперь это оригинал (!) того задания, что есть в спискке bg_jobs */
+	/* tsk - теперь это оригинал (!) того задания, что есть в таблице bg_jobs */
 	if(tsk != NULL) {
 		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
 			kill(-(tsk->pgid), SIGCONT);
@@ -160,8 +168,8 @@ int kill_handl(void *prm)
 	for (i = 0; ex->argv[i] != NULL; i++)
 		if (*(ex->argv)[i] == '%') {
 			num = atoi(ex->argv[i]+1);
-			if(num > 0 && num <= list_count(bg_jobs)) 
-				tsk = (task *) list_get(num-1,bg_jobs);
+			if(num > 0 && num <= bg_jobs.elem_quant)
+				tsk = (task *) table_get(num-1,&bg_jobs);
 			else {
 				printf("Такой задачи нет %d\n", num );
 				return 1;
@@ -199,14 +207,19 @@ int declare_handl(void *prm)
 int ls_handl(void *prm)
 {
 	int i;
+	char **argv;
 	sing_exec *ex = (sing_exec *) prm;
 
 	for(i = 0; ex->argv[i] != NULL; i++);
-	ex->argv = realloc(ex->argv,sizeof(char)*(i+1));
+	argv = malloc(sizeof(char)*(i+1));
 
-	ex->argv[i] = _STR_DUP("--color=auto");
-	ex->argv[i+1] = NULL;
+	for(i = 0; ex->argv[i] != NULL; i++)
+		argv[i] = ex->argv[i];
 
+	argv[i] = _STR_DUP("--color=auto");
+	argv[i+1] = NULL;
+
+	ex -> argv = argv;
 	/* Вызов внешней функции ls */
 	ex->handler = NULL;
 	exec_cmd(ex,NO_NEXT);
