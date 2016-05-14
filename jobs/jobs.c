@@ -25,6 +25,7 @@ void free_exec(sing_exec *ex)
 		if(ex->name != NULL) free(ex->name);
 		if(ex->argv != NULL) {
 			for (i = 0; ex->argv[i] != NULL; free(ex->argv[i]), i++); 
+			free(ex->argv);
 		}
 		if(ex->file != NULL) free(ex->file);
 		if(ex->next != NULL) free_exec(ex->next);
@@ -80,7 +81,11 @@ void exec_next(sing_exec *ex, int stat)
 				ex -> ex_mode = NO_EX;				/* На случай если в стеке несколько уровней вызова одной команды */
 				exec_cmd(ex->next,NORMAL_NEXT);
 			}
-	} else ex->tsk->status = TSK_EXITED;
+	} else  {
+		ex->tsk->status = TSK_EXITED;
+		if (ex->tsk->mode == RUN_ACTIVE)
+			destroy_task(ex->tsk); 
+	}
 }
 
 void switch_io(sing_exec *ex)
@@ -274,24 +279,42 @@ int select_ex(sing_exec *ex,int *num)
 	}
 
 	ex -> ex_mode = NO_EX;
+	table_add(NULL,&arg_vec);				/* Список аргументов всегда завершает NULL */
 	return *num;	/* Если не найдено ни одного выражения */
-} 
+}
+
+char **make_argv(int num) 
+{
+	int count = 0; 
+	int i;
+	char **argv;
+	for (i = num ;table_get(i,&arg_vec) != NULL ; i++, count++);
+
+	argv = malloc(sizeof(char *)*(count+1));
+	for (i = 0; i < count+1; i++) {
+		argv[i] = table_get(num+i,&arg_vec);
+	}
+
+	return argv;
+}
 
 sing_exec *make_sing_exec(task *tsk,int *num)
 {
+	int old_num;
 	sing_exec *ex = NULL;
 	ex = (sing_exec *) malloc(sizeof(sing_exec));
 	ex -> ios = 0;
 	ex -> name = _STR_DUP((char *) table_get(*num,&arg_vec));
 	ex -> file = NULL; /* Временно */
-	ex -> argv = (char **) (arg_vec.pointers + *num);
 
 	ex -> handler = is_shell_cmd(ex->name);	/* Проверяем, встроена ли функция в оболочку */
 	ex -> tsk = tsk;							/* Указываем на принадлежность к заданию */
 	ex -> next = NULL;
 
 	/* Выделяем исполняемую единицу из таблицы аргументов */
+	old_num = *num;
 	*num = select_ex(ex,num);
+	ex -> argv = make_argv(old_num);
 
 	return ex;
 }
@@ -328,7 +351,6 @@ sing_exec *create_exec_queue(task *tsk)
 		}
 	}
 
-	table_add(NULL,&arg_vec);				/* Список аргументов всегда завершает NULL */
 
 	return ex;
 }

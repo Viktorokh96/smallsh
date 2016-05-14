@@ -206,25 +206,21 @@ int declare_handl(void *prm)
 int ls_handl(void *prm)
 {
 	int i;
-	char **argv;
 	sing_exec *ex = (sing_exec *) prm;
 
 	for(i = 0; ex->argv[i] != NULL; i++);
-	argv = malloc(sizeof(char)*(i+1));
+	ex->argv = realloc(ex->argv,(i+2)*sizeof(char *));
 
-	for(i = 0; ex->argv[i] != NULL; i++)
-		argv[i] = ex->argv[i];
+	ex->argv[i] = _STR_DUP("--color=auto");
+	ex->argv[i+1] = NULL;
 
-	argv[i] = _STR_DUP("--color=auto");
-	argv[i+1] = NULL;
-
-	ex -> argv = argv;
 	/* Вызов внешней функции ls */
 	ex->handler = NULL;
 	exec_cmd(ex,NO_NEXT);
 
 	return 0;
 }
+
 
 int meow_handl(void *prm)
 {
