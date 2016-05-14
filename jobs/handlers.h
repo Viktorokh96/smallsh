@@ -120,7 +120,6 @@ int fg_handl(void *prm)
 		set_task_to_term(tsk);					/* Привязываем группу процесса к терминалу */
 		stat = wait_child(tsk->current_ex);
 		exec_next(tsk->current_ex,stat);
-		free(tsk);
 	}
 
 	return 0;

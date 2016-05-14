@@ -8,8 +8,6 @@
 
 #define DEBUG 0
 
-#define tsk_end(tsk)	(tsk)->status =  TSK_EXITED
-
 /* Добавление обработчика встроенной функции оболочки */
 #define add_job(n,h) 				\
 		do {						\
@@ -27,7 +25,6 @@ void free_exec(sing_exec *ex)
 		if(ex->name != NULL) free(ex->name);
 		if(ex->argv != NULL) {
 			for (i = 0; ex->argv[i] != NULL; free(ex->argv[i]), i++); 
-			free(ex->argv);		
 		}
 		if(ex->file != NULL) free(ex->file);
 		if(ex->next != NULL) free_exec(ex->next);
@@ -77,21 +74,13 @@ void exec_next(sing_exec *ex, int stat)
 	}
 
 	if (ex->next != NULL) {
-		if(ex -> ex_mode != NO_EX) {
+		if(ex -> ex_mode != NO_EX)
 			if (((WEXITSTATUS(stat) == 0) && (ex -> ex_mode  == AND_EX)) ||
 				((WEXITSTATUS(stat) != 0) && (ex -> ex_mode  == OR_EX))) {
 				ex -> ex_mode = NO_EX;				/* На случай если в стеке несколько уровней вызова одной команды */
 				exec_cmd(ex->next,NORMAL_NEXT);
-			} else {
-				tsk_end(ex->tsk);
-				return;
 			}
-		} else {
-			tsk_end(ex->tsk);
-		}
-	} else {
-		tsk_end(ex->tsk);
-	}
+	} else ex->tsk->status = TSK_EXITED;
 }
 
 void switch_io(sing_exec *ex)
