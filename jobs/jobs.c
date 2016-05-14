@@ -221,8 +221,11 @@ void update_jobs()
 		errno = 0;									/* Обязательно обнулить errno от старого значения !!! */
 		kill(-(tsk->pgid),0);						/* Необходимо проверить работает ли задание */
 		if(tsk->status == TSK_EXITED || errno == ESRCH ) { /* удостовериться что группа процессов мертва */ 
-			printf("Killed -> %d 	%s\n",
-					tsk->pgid, tsk->name);
+			if (tsk -> status == TSK_EXITED) 
+				printf("Done -> %d 	%s\n",
+						tsk->pgid, tsk->name);
+			else printf("Killed -> %d 	%s\n",
+						tsk->pgid, tsk->name);
 			destroy_task(tsk);
 			table_del(i,&bg_jobs);
 		} else {									/* Если процесс таки не завершился */

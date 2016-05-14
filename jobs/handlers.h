@@ -198,7 +198,7 @@ int declare_handl(void *prm)
 {
 	int i;
 
-	for(i = 0; __environ[i] ; i++) printf("%s\n", _ENVIRON[i]);
+	for(i = 0; _ENVIRON[i] ; i++) printf("%s\n", _ENVIRON[i]);
 
 	return 0;
 }

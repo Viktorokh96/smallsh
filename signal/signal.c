@@ -44,7 +44,8 @@ void sigch_handler(int signo, siginfo_t *si, void *ucontext)
 		sing_exec *ex;
 		int stat;
 		for (i = 0; i < bg_jobs.elem_quant; i++ ) {
-			if ((ex = have_ex(((task *) table_get(i,&bg_jobs)),si->si_pid)) != NULL) { 	/* Такой процесс существует в списке фоновых */
+			ex = ((task *) table_get(i,&bg_jobs)) -> current_ex;
+			if (ex -> pid == si->si_pid) { 	/* Такой процесс существует в списке фоновых */
 				waitpid(ex->pid,&stat,WNOHANG);
 				if (WIFSTOPPED (stat)) {
 					ex->tsk->status = TSK_STOPPED;
@@ -83,7 +84,7 @@ int init_signals()
 
 	set_sig_act(SIGINT,&sig_handler,SA_RESTART, &sigset );
 	set_sig_act(SIGTSTP,&sig_handler,SA_RESTART, &sigset);
-	set_sig_act(SIGCHLD,&sigch_handler, SA_SIGINFO | SA_RESTART | SA_NODEFER, &sigset);
+	set_sig_act(SIGCHLD,&sigch_handler, SA_SIGINFO | SA_RESTART | SA_NOCLDSTOP | SA_NODEFER, &sigset);
 	set_sig_act(SIGQUIT,SIG_IGN,0, NULL);
 
 	return 0;
