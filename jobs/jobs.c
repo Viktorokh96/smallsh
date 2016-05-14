@@ -303,6 +303,7 @@ char **make_argv(int num)
 
 sing_exec *make_sing_exec(task *tsk,int *num)
 {
+	if(*num < 0 || *num > arg_vec.elem_quant-1) return NULL;
 	int old_num;
 	sing_exec *ex = NULL;
 	ex = (sing_exec *) malloc(sizeof(sing_exec));
