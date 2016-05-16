@@ -3,6 +3,7 @@
 #include <pwd.h> 	
 #include <sys/types.h>
 #include <termios.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
@@ -42,7 +43,7 @@ char *get_curr_path(char* path)
 
 int init_general() 
 {
-	sh_terminal = STDIN_FILENO;
+	sh_terminal = open("/dev/tty", O_ASYNC | O_RDWR);
     sh_is_interactive = isatty(sh_terminal);
 
 	
@@ -53,13 +54,6 @@ int init_general()
             kill (-shell_pgid, SIGTTIN);
             tcsetpgrp (sh_terminal, shell_pgid);
             tcgetattr(sh_terminal,&shell_tmodes);
-
-            if (_SETPGID(shell_pgid,shell_pgid) < 0)
-            {
-                    perror ("Couldn't put the shell in its own process group");
-                    _exit (1);
-            }
-
     }
     
 	init_table(&past_path,5);
