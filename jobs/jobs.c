@@ -301,6 +301,28 @@ char **make_argv(int num)
 	return argv;
 }
 
+void check_io(sing_exec *ex, int num)
+{
+	int i;
+	for (i = num; table_get(i,&arg_vec) != NULL; i++) {
+		if (!strcmp(">",(char *) table_get(i,&arg_vec)) && table_get(i+1,&arg_vec) != NULL) {
+			ex->file = _STR_DUP((char *) table_get(i+1,&arg_vec));
+			ex->ios = IO_OUT;
+			table_del(i,&arg_vec);
+			table_del(i,&arg_vec);
+			return;
+		}
+		if (!strcmp("<",(char *) table_get(i,&arg_vec)) && table_get(i+1,&arg_vec) != NULL) {
+			ex->file = _STR_DUP((char *) table_get(i+1,&arg_vec));
+			ex->ios = IO_IN;
+			table_del(i,&arg_vec);
+			table_del(i,&arg_vec);
+			return;
+
+		}
+	}
+}
+
 sing_exec *make_sing_exec(task *tsk,int *num)
 {
 	if(*num < 0 || *num > arg_vec.elem_quant-1) return NULL;
@@ -318,6 +340,7 @@ sing_exec *make_sing_exec(task *tsk,int *num)
 	/* Выделяем исполняемую единицу из таблицы аргументов */
 	old_num = *num;
 	*num = select_ex(ex,num);
+	check_io(ex,old_num);
 	ex -> argv = make_argv(old_num);
 
 	return ex;

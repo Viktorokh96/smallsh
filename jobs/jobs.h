@@ -39,10 +39,10 @@
 
 
     /* Состояния задания */
-	#define	TSK_RUNNING	1
-	#define TSK_STOPPED	2
-	#define TSK_KILLED	3
-   	#define TSK_EXITED	4
+	#define	TSK_RUNNING		1
+	#define TSK_STOPPED		2
+	#define TSK_KILLED		3
+   	#define TSK_EXITED		4
 
     /* Режимы выполнения задания */
 	#define RUN_ACTIVE		1		/* Задача требует запуска в активном режиме */
@@ -56,6 +56,10 @@
 	#define AND_EX			1		/* && */
 	#define OR_EX			2		/* || */
     #define PIPE_EX			3		/* | */
+
+    /* Режимы перенаправления в\в */
+	#define IO_IN		0x0001		/* Каманда содержит перенаправление из файла */
+	#define IO_OUT		0x0002		/* Команда содержит перенаправление в файл */
 
     #define NO_NEXT 		2
     #define NORMAL_NEXT 	1
