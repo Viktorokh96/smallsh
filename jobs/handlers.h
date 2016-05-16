@@ -17,10 +17,12 @@ int exit_handl(void *prm)
 
 int pwd_handl(void *prm)
 {
+	/* prints current working directory */
 	printf("%s\n", getenv("PWD"));
 	return 0;
 }
 
+/* Transition on directories */
 int cd_handl(void *prm)
 {
 	char **argv = (((sing_exec *) prm) -> argv);
@@ -54,7 +56,7 @@ int cd_handl(void *prm)
 				}
 		}
 	curr_path = get_curr_path(curr_path);
-	/* Установка нового значения в переменную окружения PWD */
+	/* Change  value of PWD, that will be usefull for other applications */
 		setenv("PWD",curr_path,1);	
 	}
 
@@ -85,7 +87,7 @@ int jobs_handl(void *prm)
 	return 0;
 }
 
-/* Команда для перевода процесса из фонового режима в текущий */
+/* Command for transfer process from the background mode to current */
 int fg_handl(void *prm)
 {
 	int num;
@@ -95,7 +97,7 @@ int fg_handl(void *prm)
 
 	update_jobs();
 
-	if (argv[1] != NULL && *argv[1] == '%') {	/* Если пользователь ввел номер процесса */
+	if (argv[1] != NULL && *argv[1] == '%') {	/* If user entered number of process */
 		num = atoi(argv[1]+1);
 		if(num > 0 && num <= bg_jobs.elem_quant) {
 			tsk = (task *) table_get(num-1,&bg_jobs);
@@ -105,19 +107,19 @@ int fg_handl(void *prm)
 			return 1;
 		}
 	} else if(bg_jobs.elem_quant != 0) {
-		/* Иначе выводим первый процесс в списке */
+		/* If number isn't specified - we get the first */
 		tsk = (task *) table_get(0,&bg_jobs);
 		table_del(0,&bg_jobs);
 	}
 
-	/* tsk - теперь это копия того задания, что был в таблице bg_jobs */
+	/* tsk - it's the copy of task in bg_jobs */
 	if(tsk != NULL) {
-		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
+		if(tsk->status == TSK_STOPPED)			/* If process sleeps - awake */
 			kill(-(tsk->pgid), SIGCONT);
-		tsk->mode = RUN_ACTIVE;					/* Перевод в активный режим */
+		tsk->mode = RUN_ACTIVE;					/* Switching to active mode */
 		tsk->status = TSK_RUNNING;
 		printf("%s\n",tsk->name);
-		set_task_to_term(tsk);					/* Привязываем группу процесса к терминалу */
+		set_task_to_term(tsk);					/* bind group of process to the terminal */
 		stat = wait_child(tsk->current_ex);
 		exec_next(tsk->current_ex,stat);
 	}
@@ -125,7 +127,7 @@ int fg_handl(void *prm)
 	return 0;
 }
 
-/* Команда для перевода процесса из спящего режима в выполняемый на фоне */
+/* Command for transfer process from the sleep mode to running in background */
 int bg_handl(void *prm)
 {
 	int num;
@@ -134,7 +136,7 @@ int bg_handl(void *prm)
 
 	update_jobs();
 
-	if (argv[1] != NULL && *argv[1] == '%') {	/* Если пользователь ввел номер процесса */
+	if (argv[1] != NULL && *argv[1] == '%') {	/* If user entered number of process */
 		num = atoi(argv[1]+1);
 		if(num > 0 && num <= bg_jobs.elem_quant) {
 			tsk = (task *) table_get(num-1,&bg_jobs);
@@ -143,12 +145,12 @@ int bg_handl(void *prm)
 			return 1;
 		}
 	} else if(bg_jobs.elem_quant != 0)
-		/* Иначе выводим первый процесс в списке */
+		/* If number isn't specified - we get the first */
 		tsk = (task *) table_get(0,&bg_jobs);
 
-	/* tsk - теперь это оригинал (!) того задания, что есть в таблице bg_jobs */
+	/* tsk - it's a original (!) of task in bg_jobs */
 	if(tsk != NULL) {
-		if(tsk->status == TSK_STOPPED)			/* Если процесс спит - будим */
+		if(tsk->status == TSK_STOPPED)			/* If process sleeps - awake */
 			kill(-(tsk->pgid), SIGCONT);
 		tsk->status = TSK_RUNNING;
 	}
@@ -156,7 +158,7 @@ int bg_handl(void *prm)
 	return 0;
 }
 
-/* Перегрузка готовой программы kill, для дополнительного функционала */	
+/* Overloading kill, for more functionality */	
 int kill_handl(void *prm)
 {
 	task *tsk;
@@ -165,7 +167,7 @@ int kill_handl(void *prm)
 	sing_exec *ex = (sing_exec *) prm;
 
 	for (i = 0; ex->argv[i] != NULL; i++)
-		if (*(ex->argv)[i] == '%') {
+		if (*(ex->argv)[i] == '%') {		/* If user entered number of process */
 			num = atoi(ex->argv[i]+1);
 			if(num > 0 && num <= bg_jobs.elem_quant)
 				tsk = (task *) table_get(num-1,&bg_jobs);
@@ -180,7 +182,7 @@ int kill_handl(void *prm)
 				kill(-(tsk->pgid),SIGCONT);
 		}
 
-	/* Вызов внешней функции kill */
+	/* Call of external kill */
 	ex->handler = NULL;
 	exec_cmd(ex,NO_NEXT);
 
@@ -189,7 +191,7 @@ int kill_handl(void *prm)
 
 int version_handl(void *prm)
 {
-	printf("Minimalistic interpreter %s, version 0.004\tWelcome!\n",shell_name);
+	printf("Minimalistic interpreter %s, version 0.005\tWelcome!\n",shell_name);
 
 	return 0;
 }
@@ -203,6 +205,7 @@ int declare_handl(void *prm)
 	return 0;
 }
 
+/* Overloading ls, while aliases aren't implemented  */	
 int ls_handl(void *prm)
 {
 	int i;
@@ -214,7 +217,7 @@ int ls_handl(void *prm)
 	ex->argv[i] = _STR_DUP("--color=auto");
 	ex->argv[i+1] = NULL;
 
-	/* Вызов внешней функции ls */
+	/* Call of external ls */
 	ex->handler = NULL;
 	exec_cmd(ex,NO_NEXT);
 

@@ -239,7 +239,7 @@ task *create_task()
 {
 	task *tsk = (task *) malloc(sizeof(task));
 
-	tsk -> name = current_cmd;
+	tsk -> name = _STR_DUP(current_cmd);
 	tsk -> pgid = 0;
 	tsk -> status = 0;
 	tsk -> first = create_exec_queue(tsk);

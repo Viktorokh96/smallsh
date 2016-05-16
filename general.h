@@ -19,37 +19,40 @@
 
 	#define PATHSIZE	64
 
-	/* Текущая директория */
+	/* current working directory */
 	char *curr_path;
 
-	/* Путь домашней дериктории */
+	/* full home path */
 	char *home_path;
 
-	/* Имя пользователя */
+	/* Username */
 	char *user_name;
 
-	/* Полное название текущего задания */
+	/* Full name of current task */
 	char *current_cmd;
 
-	/* Предыдущая директория */
+	/* table of path history */
 	addr_table past_path;
 
-	/* Индетификартор процесса оболочки */
+	/* shell group id */
 	pid_t shell_pgid;
 
-	/* Название оболочки */
+	/* name of shell */
 	char *shell_name;
 
+	/* shell terminal mode descriptor */
     struct termios shell_tmodes;
 
+    /* fd of shell's terminal */
 	int sh_terminal;
     
+    /* working mode */
     int sh_is_interactive;
 
-	/* Получение текущей директории */
+	/* To get current directory */
 	char *get_curr_path(char* path);
 
-	/* Инициализация глобальных структур данных */
+	/* Initialization of global data structures */
 	int init_general();
 
 	void del_general();

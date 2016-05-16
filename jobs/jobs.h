@@ -1,7 +1,7 @@
 #ifndef JOBS_H
 #define JOBS_H 
 	
-	#include <sys/types.h> 	/* Спасибо stackoverflow ( для std=c99 ) */
+	#include <sys/types.h> 
 	#include <unistd.h>
 	#include <termios.h>
 	#include "../services/table.h"
@@ -38,28 +38,28 @@
     #endif
 
 
-    /* Состояния задания */
+    /* Task status */
 	#define	TSK_RUNNING		1
 	#define TSK_STOPPED		2
 	#define TSK_KILLED		3
    	#define TSK_EXITED		4
 
-    /* Режимы выполнения задания */
-	#define RUN_ACTIVE		1		/* Задача требует запуска в активном режиме */
-	#define RUN_BACKGR		2		/* Задача требует запуска в фоновом режиме */
+    /* Task run modes */
+	#define RUN_ACTIVE		1		/* Task will be executed in active (foreground) mode */
+	#define RUN_BACKGR		2		/* Task will be executed in background mode */
 
-    #define PASS_BACKGR		-1		/* От exec_cmd означает что процесс выполняется в фоновом режиме */
-    #define EMPTY_EX		-2		/* Если пустая команда */
+    #define PASS_BACKGR		-1		
+    #define EMPTY_EX		-2		/* If empty command */
 
-    /* Возможные специальные условия выполнения */
+    /* Possible special conditions of execution */
 	#define NO_EX			0
 	#define AND_EX			1		/* && */
 	#define OR_EX			2		/* || */
     #define PIPE_EX			3		/* | */
 
-    /* Режимы перенаправления в\в */
-	#define IO_IN		0x0001		/* Каманда содержит перенаправление из файла */
-	#define IO_OUT		0x0002		/* Команда содержит перенаправление в файл */
+    /* IO Redirection modes */
+	#define IO_IN			1
+	#define IO_OUT			2
 
     #define NO_NEXT 		2
     #define NORMAL_NEXT 	1
@@ -67,83 +67,80 @@
     typedef struct st_task task;
 
 	typedef struct job_st {
-		char *name;					/* Имя команды */
-		int (*handler)(void *);  	/* Обработчик */
+		char *name;					/* Name of command */
+		int (*handler)(void *);  	/* Handler */
 	} job;
 
-	typedef struct single_execute {	/* Структура исполняемой единицы */
+	typedef struct single_execute {	/* Single execution struct ( process synonym ) */
 		char *name;
-		char **argv;				/* Аргументы исполняемой единицы */
-		int8_t ex_mode;				/* Условие выполнения следующего задания ('&&','||','|' или 0 если нет) */
+		char **argv;				/* Arguments of ex. */
+		int8_t ex_mode;				/* Condition for next running ('&&','||','|' or 0 if not has) */
 #if 1		
-		char *file;					/* Файлы в которые или из которых идёт в\в данных */
-		int8_t ios;					/* Режим перенаправления ввода вывода */
+		char *file;					/* Files that used fo IO ( if has switching ) */
+		int8_t ios;					/* IO switch mode */
 #endif
 		struct
-			single_execute *next;	/* Следующая исполяемая единица в цепочке */		
-		int (*handler)(void *prm);	/* Указатель на исполнителя, если он есть */
-		pid_t pid;					/* Индетификатор процесса */
-		task *tsk;					/* Задание в рамках которого выполнется данная исп.еденица */
+			single_execute *next;	/* Next single execution in chain */		
+		int (*handler)(void *prm);	/* Pointer to handler if it has */
+		pid_t pid;					/* Process ID */
+		task *tsk;					/* The task within which this process is performed */
 	} sing_exec;
 
-	typedef struct st_task {		/* Структура задания */
+	typedef struct st_task {		/* Task struct */
 		char *name;
-		pid_t pgid;					/* Индетификатор задания (группы процессов) */
-		int status;					/* Статус задания (выполняется или остановлен) */
-		int8_t mode;				/* Режим выполнения (фоновый или активный) */
+		pid_t pgid;					/* Task ID (group of process) */
+		int status;					/* Task status (running or stopped) */
+		int8_t mode;				/* Execution mode (background or foreground) */
         struct termios tmodes; 
         int stdin, stdout, stderr; 
 		sing_exec *first;
 		sing_exec *current_ex;
 	} task;
 
-	/* Таблица выполняемых программ оболочки */
+	/* Table of built-in commands */
 	addr_table sh_jobs;
 
-	/* Таблица программ выполняющихся в фоновом режиме */
+	/* The table of the tasks which are executed in the background */
 	addr_table bg_jobs;
 
-	/* Таблицы аргументов в команде */ 
+	/* Table of arguments in command */ 
 	addr_table arg_vec;
 
 	void init_jobs();
 	
 	void del_jobs();
 
-	/* Определение встроенной функции */
+	/* Find built-in commands */
 	int (* is_shell_cmd(char *cmd)) (void *);
 
-	/* Подготовка аргументов для команды */
-	void *prepare_args(int num, sing_exec *ex, unsigned mode);
-
-	/* Запуск команды в режимах: NORMAL_NEXT, NO_NEXT */
+	/* Execute commands in modes: NORMAL_NEXT, NO_NEXT */
 	int exec_cmd (sing_exec *ex,int8_t mode);
 
-	/* Ожидание дочернего процесса */
+	/* Waiting for child process */
 	int wait_child(sing_exec *ex);
 
-	/* Обновление списка фоновых процессов */
+	/* Updating a table of background process */
 	void update_jobs();
 
-	/* Содание очереди на исполнение */
+	/* creating a new executable queue */
 	sing_exec *create_exec_queue(task *tsk);
 
-	/* Создание нового задания */
+	/* Create a new task */
 	task *create_task();
 
-	/* Проверка статуса с последующим выполнением (возвращает 1 если next = NULL) */
+	/* Checking status and execute next */
 	void exec_next(sing_exec *ex, int stat);
 
-	/* Запуск выполнения задания */
+	/* Execute group of processes */
 	int exec_task(task *tsk);
 
-	/* Освобождение памяти, занятую под исп.единицу */
+	/* Freeing allocated memory for single execution */
 	void free_exec(sing_exec *ex);
 
-	/* Освобождение памяти, занятую под задание */
+	/* Freeing allocated memory for task */
 	void destroy_task(task *tsk);
 
-	/* Поиск процесса в задании */
+	/* To find process in task */
 	sing_exec *have_ex(task *tsk,pid_t pid);
 
 	void set_task_to_term(task *tsk);
