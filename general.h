@@ -1,60 +1,60 @@
 #ifndef GENERAL_H
 #define GENERAL_H
-	#include <unistd.h>
-	#include <stdlib.h>
-	#include "./services/table.h"
-	#include "./defines.h"
-	#include <sys/types.h>
-	#include <linux/limits.h>
-	#include <termios.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include "./services/table.h"
+#include "./defines.h"
+#include <sys/types.h>
+#include <linux/limits.h>
+#include <termios.h>
 
 #ifdef	__USE_GNU
-	#define _GETWD(p)	get_current_dir_name (void);
+#define _GETWD(p)	get_current_dir_name (void);
 #elif (defined __USE_XOPEN_EXTENDED && !defined __USE_XOPEN2K8) \
     || defined __USE_BSD
-	#define _GETWD(p)	getwd ((p));
+#define _GETWD(p)	getwd ((p));
 #else
-    #define _GETWD(p) 	getcwd ((p),PATH_MAX);
+#define _GETWD(p) 	getcwd ((p),PATH_MAX);
 #endif
 
-	#define PATHSIZE	64
+#define PATHSIZE	64
 
 	/* current working directory */
-	char *curr_path;
+char *curr_path;
 
 	/* full home path */
-	char *home_path;
+char *home_path;
 
 	/* Username */
-	char *user_name;
+char *user_name;
 
 	/* Full name of current task */
-	char *current_cmd;
+char *current_cmd;
 
 	/* table of path history */
-	addr_table past_path;
+addr_table past_path;
 
 	/* shell group id */
-	pid_t shell_pgid;
+pid_t shell_pgid;
 
 	/* name of shell */
-	char *shell_name;
+char *shell_name;
 
 	/* shell terminal mode descriptor */
-    struct termios shell_tmodes;
+struct termios shell_tmodes;
 
     /* fd of shell's terminal */
-	int sh_terminal;
-    
+int sh_terminal;
+
     /* working mode */
-    int sh_is_interactive;
+int sh_is_interactive;
 
 	/* To get current directory */
-	char *get_curr_path(char* path);
+char *get_curr_path(char *path);
 
 	/* Initialization of global data structures */
-	int init_general();
+int init_general();
 
-	void del_general();
-	
+void del_general();
+
 #endif

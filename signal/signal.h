@@ -1,15 +1,15 @@
 #ifndef	SIGNAL_H
 #define	SIGNAL_H
-	#include <unistd.h>
+#include <unistd.h>
 
-	#define _SIGSET_T	__sigset_t
-	
-	void sig_handler(int sig);
+#define _SIGSET_T	__sigset_t
 
-	void set_int_ignore();
+void sig_handler(int sig);
 
-	void set_int_dfl();
+void set_int_ignore();
 
-	int init_signals();
+void set_int_dfl();
+
+int init_signals();
 
 #endif
