@@ -257,10 +257,11 @@ task *create_task()
 {
 	task *tsk = (task *) malloc(sizeof(task));
 
-	tsk->name = _STR_DUP(current_cmd);
 	tsk->pgid = 0;
 	tsk->status = 0;
 	tsk->first = create_exec_queue(tsk);
+	if(tsk->first != NULL && tsk->first->name != NULL) 
+		tsk->name = _STR_DUP(tsk->first->name);
 	tsk->current_ex = NULL;
 
 	return (tsk->first == NULL) ? NULL : tsk;	/* Пустое задание - это ничего, => незачем возвращать что-то кроме NULL */

@@ -12,6 +12,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 #include "defines.h"
 #include "services/bits.h"
 #include "./parses/parse.h"
@@ -19,6 +21,10 @@
 #include "./signal/signal.h"
 #include "general.h"
 #include "shell.h"
+
+#ifdef _READLINE_H_
+ 	char shell_prompt[100];
+#endif
 
 /* Инициализация служебных систем оболочки */
 void init_shell(char *argv[])
@@ -65,13 +71,7 @@ char *get_command(char *cmd)
 			goto get;	/* это достаточно элегантно. ИМХО */
 		}
 	}
-	p = current_cmd = _STR_DUP(cmd);
-	for (p += strlen(cmd) + 1; p > current_cmd; p--)
-		if (*p == '\n') {	/* Избавлемся от символа \n */
-			*p = '\0';
-			break;
-		}
-
+	
 	return cmd;
 }
 
@@ -84,19 +84,40 @@ static inline void clear_cmd_buff(char *cmd_buf)
 
 int main(int argc, char *argv[])
 {
-	char command[CMD_SIZE];
 	char *cmd;		/* Указатель на следующую команду */
+
+#ifdef _READLINE_H_
+	char *command;
+	snprintf(shell_prompt, sizeof(shell_prompt), "%s:%s $ ", getenv("USER"), getcwd(NULL, 1024));
+#else	
+	char command[CMD_SIZE];
+#endif
 
 	init_shell(argv);
 
 	for (;;) {
+#ifdef _READLINE_H_
+		snprintf(shell_prompt, sizeof(shell_prompt), "%s:%s#|>", user_name, short_path(curr_path));
+		command = readline(shell_prompt);
+		if (*command == '\0')
+            continue;
+        /* автозавершение через табуляцию */
+        rl_bind_key('\t', rl_complete);
+        /* Добавляем в историю команд */
+        cmd = command;
+#else
 		clear_cmd_buff(command);	/* Принудительная очистка буффера команд */
 		printf("%s:%s#|>", user_name, short_path(curr_path));
 		cmd = get_command(command);	/* Выполнение команды */
+#endif
 		do {
 			cmd = parse_cmd(cmd);
 			exec_command();
 		} while (cmd != NULL);
+#ifdef _READLINE_H_		
+        add_history(command);
+        free(command);
+#endif
 	}
 
 	return 0;

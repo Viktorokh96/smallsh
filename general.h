@@ -28,9 +28,6 @@ char *home_path;
 	/* Username */
 char *user_name;
 
-	/* Full name of current task */
-char *current_cmd;
-
 	/* table of path history */
 addr_table past_path;
 

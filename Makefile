@@ -3,7 +3,7 @@ CC = cc
 # Указание компилятору на поиск заголовочных файлов
 INCLUDE = -I/usr/include  
 
-LIBS = 
+LIBS = -lreadline
 
 # Направление поиска для make
 vpath %.c ./services ./parses ./jobs ./signal

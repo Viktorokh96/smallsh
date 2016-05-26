@@ -10,6 +10,7 @@
 /* Разделяем команду на части, выделяя исполняемую часть и аргументы */
 char *parse_cmd(char *cmd)
 {
+	unsigned char next = 0;
 	char *tmp;
 	char *p, *q;
 
@@ -40,10 +41,12 @@ char *parse_cmd(char *cmd)
 					q += 1;
 				}
 			}
+			if(*q) next = 1;
+			else next = 0;
 			*q = 0;
 			tmp = _STR_DUP(p);
 			table_add(tmp, &arg_vec);
-			if (*(q + 1))
+			if (next && *(q + 1))
 				p = q + 1;
 			else
 				p = q;
