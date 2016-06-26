@@ -118,33 +118,15 @@ void switch_io(sing_exec * ex)
 /* Разъединение управляющего терминала группе процессов */
 void unset_task_from_term(task * tsk)
 {
-	_SIGSET_T sigset, oldset;
-	sigemptyset(&sigset);
-	sigaddset(&sigset, SIGTTOU);
-	sigaddset(&sigset, SIGTTIN);
-
-	sigprocmask(SIG_BLOCK, &sigset, &oldset);
-
 	tcsetpgrp(sh_terminal, shell_pgid);
 	tcgetattr(sh_terminal, &tsk->tmodes);
 	tcsetattr(sh_terminal, TCSADRAIN, &shell_tmodes);
-
-	sigprocmask(SIG_SETMASK, &oldset, NULL);
 }
 
 /* Установка управляющего терминала группе процессов */
 void set_task_to_term(task * tsk)
 {
-	_SIGSET_T sigset, oldset;
-	sigemptyset(&sigset);
-	sigaddset(&sigset, SIGTTOU);
-	sigaddset(&sigset, SIGTTIN);
-
-	sigprocmask(SIG_BLOCK, &sigset, &oldset);
-
 	tcsetpgrp(sh_terminal, tsk->pgid);
-
-	sigprocmask(SIG_SETMASK, &oldset, NULL);
 }
 
 /* Исполнение команды */

@@ -89,6 +89,8 @@ int init_signals()
 		    SA_SIGINFO | SA_RESTART | SA_NOCLDSTOP | SA_NODEFER,
 		    &sigset);
 	set_sig_act(SIGQUIT, SIG_IGN, 0, NULL);
+	set_sig_act(SIGTTOU, SIG_IGN, 0, NULL);
+	set_sig_act(SIGTTIN, SIG_IGN, 0, NULL);
 
 	return 0;
 }
