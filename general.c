@@ -57,10 +57,7 @@ int init_general()
 	init_table(&past_path, 5);
 
 	curr_path = get_curr_path(curr_path);
-
-	if (curr_path != NULL)
-		table_add(_STR_DUP(curr_path), &past_path);
-
+	
 	home_path = getenv("HOME");
 	user_name = getpwuid(geteuid())->pw_name;	/* Получаем имя пользователя */
 
@@ -69,5 +66,5 @@ int init_general()
 
 void del_general()
 {
-	del_table(&past_path, FREE_CONT);
+	destroy_table(&past_path);
 }

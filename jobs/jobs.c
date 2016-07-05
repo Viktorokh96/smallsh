@@ -426,7 +426,7 @@ void init_jobs()
 
 void del_jobs()
 {
-	del_table(&arg_vec, FREE_CONT);
-	del_table(&sh_jobs, FREE_CONT);
-	del_table(&bg_jobs, FREE_CONT);
+	destroy_table(&arg_vec);
+	destroy_table(&sh_jobs);
+	destroy_table(&bg_jobs);
 }

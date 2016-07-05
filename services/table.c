@@ -1,115 +1,117 @@
 #include "table.h"
 #include <stdlib.h>
-#include <stdio.h>
 
 #define check_table(t,ret) \
 	do {	\
-		if ((t) == NULL) {	\
-			fprintf(stderr, \
-				"table init error: invalid addres to struct addr_table\n");\
+		if ((t) == NULL)	\
 			ret;	\
-		}	\
 	} while(0)
 
 #define check_range(num,t,ret) \
 	do { \
-		if (num < 0 || num > (t -> elem_quant-1)) { \
-			fprintf(stderr, \
-				"table get error: invalid value of number argument\n"); \
+		if (num < 0 || num > (t -> elem_quant-1)) \
 			ret; \
-		}	\
 	} while(0)
 
-void swap(void **p1, void **p2)
-{
-	void *tmp = *p1;
-	*p1 = *p2;
-	*p2 = tmp;
-}
-
 /* Инициализация таблицы */
-void init_table(addr_table * t, unsigned step)
+int init_table(addr_table *t, unsigned step)
 {
-	if (step < 1) {
-		fprintf(stderr,
-			"table init error: step value is less than 1\n");
-		return;
-	}
+	if (step < 1)
+		return ETINVAL;
 
-	check_table(t, return);
+	check_table(t,return ETPNULL);
 
-	t->pointers = NULL;
-	t->size = 0;
-	t->step = step;
-	t->elem_quant = 0;
+	t -> pointers = NULL;
+	t -> size = 0;
+	t -> step = step;
+	t -> elem_quant = 0;
+
+	return 0;
 }
 
-void table_realloc(addr_table * t)
+int table_realloc(addr_table *t)
 {
-	check_table(t, return);
+	check_table(t,return ETPNULL);
 
-	t->size += t->step;
-	t->pointers = realloc(t->pointers, t->size * sizeof(void *));
-	if (t->pointers == NULL) {
-		fprintf(stderr,
-			"table realloc error: couldn't request memory \n");
-	}
+	t -> size += t -> step;
+	t -> pointers = realloc(t -> pointers, t -> size * sizeof(void *));
+	if (t -> pointers == NULL)
+		return ETSYST;
+
+	return 0;
 }
 
 /* Вставка нового элемента */
-void table_add(void *cont, addr_table * t)
+int table_add(void *cont,addr_table *t)
 {
-	check_table(t, return);
+	check_table(t,return ETPNULL);
 
-	if (t->size == t->elem_quant)
-		table_realloc(t);
-	t->pointers[t->elem_quant] = cont;
-	t->elem_quant++;
+	if(t -> size == t -> elem_quant) 
+		if(table_realloc(t) == ETSYST)
+			return ETSYST;
+	t -> pointers[t -> elem_quant] = cont;
+	t -> elem_quant++;
+
+	return 0;
 }
 
 /* Удаление элемента из таблицы адресов */
-void table_del(unsigned num, addr_table * t)
+int table_del(signed num, addr_table *t)
 {
-	check_table(t, return);
-	check_range(num, t, return);
+	check_table(t,return ETPNULL);
+	check_range(num,t,return ETRANGE);
 
-	t->pointers[num] = NULL;
-	t->elem_quant--;
-	while ((num) < (t->elem_quant)) {
-		swap(&t->pointers[num], &t->pointers[num + 1]);
+	t -> elem_quant--;
+	while((num) < (t -> elem_quant)) {
+		t->pointers[num] = t->pointers[num+1];
 		num++;
 	}
+
+	return 0;
 }
 
 /* Получение адреса из таблицы адресов */
-void *table_get(unsigned num, addr_table * t)
+void *table_get(signed num, addr_table *t)
 {
-	check_table(t, return NULL);
-	check_range(num, t, return NULL);
-
-	return t->pointers[num];
+	check_table(t,return NULL);
+	check_range(num,t,return NULL);
+	
+	return t -> pointers[num];
 }
 
 /* Установка нового значения, существующему элементу в таблице */
-void table_set(unsigned num, void *cont, addr_table * t)
+int table_set(signed num, void *cont ,addr_table *t)
 {
-	check_table(t, return);
-	check_range(num, t, return);
+	check_table(t,return ETPNULL);
+	check_range(num,t,return ETRANGE);
 
-	t->pointers[num] = cont;
+	t -> pointers[num] = cont;
+
+	return 0;
 }
 
 /* Удаление таблицы */
-void del_table(addr_table * t, int free_mode)
+int free_table(addr_table *t)
 {
-	check_table(t, return);
+	check_table(t,return ETPNULL);
+	
+	free(t -> pointers);
 
-	if (free_mode == FREE_CONT) {
-		int i;
-		for (i = 0; i < t->elem_quant; i++)
-			if (t->pointers[i])
-				free(t->pointers[i]);
+	return 0;
+}
+
+/* Уничтожение таблицы вместе с содержимым */
+int destroy_table(addr_table *t)
+{
+	check_table(t,return ETPNULL);
+
+	void *p;
+	while((p = table_get(0,t)) != NULL) {
+		free(p);
+		table_del(0,t);
 	}
 
-	free(t->pointers);
+	free_table(t);
+
+	return 0;
 }

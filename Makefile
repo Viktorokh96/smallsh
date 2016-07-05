@@ -18,7 +18,7 @@ PARSESRC = parse.c
 JOBSSRC = jobs.c
 SIGNALSRC = signal.c
 TABLESRC = table.c
-# Объектные файлы 
+# Объектные файлы
 MAINOBJ = $(patsubst %.c,%.o,$(MAINSOURCE))
 PARSEOBJ = $(patsubst %.c,%.o,$(PARSESRC))
 JOBSOBJ = $(patsubst %.c,%.o,$(JOBSSRC))
