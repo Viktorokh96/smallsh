@@ -16,14 +16,11 @@
 #endif
 
 /* Разделяем команду на части, выделяя исполняемую часть и аргументы */
-char *parse_cmd(char *cmd);
-
-/* Функция, разбивающая строку на пути поиска исполняемых файлов */
-char *find_exec(char **path, char *execf);
+char *parse_cmd(char *cmd, addr_table *tab);
 
 /* Обрезка полного пути для удобства */
-char *short_path(char *path);
+char *short_path(char *path, char *home_path);
 
-char *full_path(char *path);
+char *full_path(char *path, char *home_path);
 
 #endif

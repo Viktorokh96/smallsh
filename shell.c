@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <malloc.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "defines.h"
@@ -22,19 +23,19 @@
 #include "general.h"
 #include "shell.h"
 
-#ifdef _READLINE_H_
  	char shell_prompt[100];
-#endif
 
 /* Инициализация служебных систем оболочки */
 void init_shell(char *argv[])
 {
 	/* Здесь обрабатываюсь аргументы, полученные от пользователя при запуске оболчки */
 	char *p;
-	p = shell_name = strdup(argv[0]);
+	p = shell_name = argv[0];
 	shell_name += strlen(shell_name) - 1;
 	for (; (shell_name != p) &&	/* Получаем полное имя процесса оболочки */
 	     (*(shell_name - 1) != CH_DIR_SEP); shell_name--) ;
+	shell_name = _STR_DUP(shell_name);
+
 
 	init_general();
 	init_jobs();
@@ -52,29 +53,6 @@ void exec_command()
 		exec_task(tsk);	/* и непосредственное исполнение */
 }
 
-/* Получаем команду от пользователя */
-
-char *get_command(char *cmd)
-{
-	char *p, *q = cmd;
- get:	p = q = fgets(q, CMD_SIZE, stdin);
-	while (*p)
-		if (*p++ == '#') {
-			*(p - 1) = '\0';
-			return cmd;
-		}
-	q += strlen(q) - 1;
-	for (; ((q > cmd) && (*q != ESCAPING)); q--) ;
-	if (*q == ESCAPING) {	/* Учитываем эффект экранирования для некоторых символов */
-		if (*(q + 1) != ';') {
-			printf("->");	/* Хотите - ругайтесь, но выглядит */
-			goto get;	/* это достаточно элегантно. ИМХО */
-		}
-	}
-	
-	return cmd;
-}
-
 static inline void clear_cmd_buff(char *cmd_buf)
 {
 	int i;
@@ -84,40 +62,37 @@ static inline void clear_cmd_buff(char *cmd_buf)
 
 int main(int argc, char *argv[])
 {
-	char *cmd;		/* Указатель на следующую команду */
-
-#ifdef _READLINE_H_
+	char *cmd;			/* Указатель на следующую команду */
 	char *command;
-	snprintf(shell_prompt, sizeof(shell_prompt), "%s:%s $ ", getenv("USER"), getcwd(NULL, 1024));
-#else	
-	char command[CMD_SIZE];
-#endif
+	char *path;
+	
+	init_shell(argv);	/* Инициализация оболочки */
 
-	init_shell(argv);
+	snprintf(shell_prompt, sizeof(shell_prompt), "%s:%s $ ", getenv("USER"), curr_path);
 
 	for (;;) {
-#ifdef _READLINE_H_
-		snprintf(shell_prompt, sizeof(shell_prompt), "%s:%s#|>", user_name, short_path(curr_path));
+		
+		path = short_path(curr_path, home_path);
+		snprintf(shell_prompt, sizeof(shell_prompt), "%s:%s#|>", 
+			user_name, path);
+		if(path != curr_path && path) free(path);
+
 		command = readline(shell_prompt);
 		if (*command == '\0')
             continue;
+        
         /* автозавершение через табуляцию */
         rl_bind_key('\t', rl_complete);
-        /* Добавляем в историю команд */
-        cmd = command;
-#else
-		clear_cmd_buff(command);	/* Принудительная очистка буффера команд */
-		printf("%s:%s#|>", user_name, short_path(curr_path));
-		cmd = get_command(command);	/* Выполнение команды */
-#endif
+        cmd = command;	/* Предотвращение потери исходной команды */
+		
 		do {
-			cmd = parse_cmd(cmd);
+			cmd = parse_cmd(cmd, &arg_vec);
 			exec_command();
 		} while (cmd != NULL);
-#ifdef _READLINE_H_		
+        
+        /* Добавляем в историю команд */
         add_history(command);
         free(command);
-#endif
 	}
 
 	return 0;
@@ -127,5 +102,6 @@ void end_of_work(int status)
 {
 	del_general();
 	del_jobs();
+
 	_exit(status);
 }

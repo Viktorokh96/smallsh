@@ -4,6 +4,7 @@
 #include "../parses/parse.h"
 #include "../signal/signal.h"
 #include <wait.h>
+#include <unistd.h>
 #include <errno.h>
 
 #define DEBUG 0
@@ -31,28 +32,19 @@ void free_exec(sing_exec * ex)
 		}
 		if (ex->file != NULL)
 			free(ex->file);
-		if (ex->next != NULL)
+
+		/* Рекурсивное удаление следующих исп.единиц в цепочке */
+		if (ex->next != NULL)					
 			free_exec(ex->next);
+
+		free(ex);
 	}
 }
 
 /* Попытка запуска исполняемого фаайла */
-int try_exec(char *path, sing_exec * ex)
+int try_exec(sing_exec *ex)
 {
-	int state = 0;
-	char *tmp;
-	char *exec_path = _STR_DUP(path);
-
-	while ((tmp = find_exec(&exec_path, ex->name)) != NULL) {
-		if (exec_path == NULL)
-			state = 1;
-		if (!execve(exec_path, ex->argv, _ENVIRON))
-			return 0;
-		else
-			state = 1;
-		exec_path = tmp;
-	}
-	return state;
+	return execvp(ex->name, ex->argv);			/* Исполнение команды */	
 }
 
 sing_exec *have_ex(task * tsk, pid_t pid)
@@ -67,12 +59,14 @@ sing_exec *have_ex(task * tsk, pid_t pid)
 	return NULL;
 }
 
-void destroy_task(task * tsk)
+void destroy_task(task *tsk)
 {
 	if (tsk->name != NULL)
 		free(tsk->name);
 	if (tsk->first != NULL)
 		free_exec(tsk->first);
+
+	free(tsk);
 }
 
 /* Проверка статуса с последующим выполнением (возвращает 1 если next = NULL) */
@@ -119,8 +113,8 @@ void switch_io(sing_exec * ex)
 void unset_task_from_term(task * tsk)
 {
 	tcsetpgrp(sh_terminal, shell_pgid);
-	tcgetattr(sh_terminal, &tsk->tmodes);
-	tcsetattr(sh_terminal, TCSADRAIN, &shell_tmodes);
+	//tcgetattr(sh_terminal, &tsk->tmodes);
+	//tcsetattr(sh_terminal, TCSADRAIN, &shell_tmodes);
 }
 
 /* Установка управляющего терминала группе процессов */
@@ -144,18 +138,15 @@ int exec_cmd(sing_exec * ex, int8_t mode)
 	} else {
 		ex->pid = fork();
 		if (ex->pid == 0) {	/* Дочерний процесс */
+
 			switch_io(ex);	/* Если требуется перенаправление в/в */
 			set_int_dfl();	/* Установка обработчиков сигналов */
-			if ((stat = try_exec(getenv("PATH"), ex)) != 0) {
-				if ((*(ex->name) == '.')
-				    && ((stat = try_exec(getenv("PWD"), ex)) ==
-					0)) {
-					_exit(stat);
-				}
-				printf
-				    ("\n%s: %s <- исполняемый файл не найден.\n",
+
+			if ((stat = try_exec(ex)) != 0) {	/* Исполнение */
+				printf("\n%s: %s <- исполняемый файл не найден.\n",
 				     shell_name, ex->name);
 				_exit(stat);
+
 			}
 		} else {	/* Родитель (оболочка) */
 			_SETPGID(ex->pid, ex->pid);
@@ -270,47 +261,45 @@ void check_ex_mode(sing_exec * ex, char *mode)
 		ex->ex_mode = NO_EX;
 }
 
-int select_ex(sing_exec * ex, int *num)
+void select_ex(sing_exec * ex)	/* Выделение исполняемой единицы в списке аргументов */
 {
 	int i;
 
-	if (*num < 0 || *num > arg_vec.elem_quant)
-		return -1;
-
-	for (i = *num; i < arg_vec.elem_quant; i++) {
+	for (i = 0; i < arg_vec.elem_quant; i++) {
 		if (!strcmp((char *)table_get(i, &arg_vec), "&&")
 		    || !strcmp((char *)table_get(i, &arg_vec), "||")
 		    || !strcmp((char *)table_get(i, &arg_vec), "|")) {
 			check_ex_mode(ex, (char *)table_get(i, &arg_vec));
 			table_set(i, NULL, &arg_vec);
-			return i + 1;
+
+			return;
 		}
 	}
 
 	ex->ex_mode = NO_EX;
 	table_add(NULL, &arg_vec);	/* Список аргументов всегда завершает NULL */
-	return *num;		/* Если не найдено ни одного выражения */
 }
 
-char **make_argv(int num)
+char **make_argv()				/* Подготовка аргументов исполняемой команде */
 {
 	int count = 0;
 	int i;
 	char **argv;
-	for (i = num; table_get(i, &arg_vec) != NULL; i++, count++) ;
+	for (i = 0; table_get(i, &arg_vec) != NULL; i++, count++) ;
 
 	argv = malloc(sizeof(char *) * (count + 1));
-	for (i = 0; i < count + 1; i++) {
-		argv[i] = table_get(num + i, &arg_vec);
+	for (i = 0; i < count + 1; i++) {	/* Взятие аргументов из таблицы arg_vec */
+		argv[i] = table_get(0, &arg_vec);
+		table_del(0,&arg_vec);
 	}
 
 	return argv;
 }
 
-void check_io(sing_exec * ex, int num)
+void check_io(sing_exec * ex)
 {
 	int i;
-	for (i = num; table_get(i, &arg_vec) != NULL; i++) {
+	for (i = 0; table_get(i, &arg_vec) != NULL; i++) {
 		if (!strcmp(">", (char *)table_get(i, &arg_vec))
 		    && table_get(i + 1, &arg_vec) != NULL) {
 			ex->file = _STR_DUP((char *)table_get(i + 1, &arg_vec));
@@ -326,31 +315,26 @@ void check_io(sing_exec * ex, int num)
 			table_del(i, &arg_vec);
 			table_del(i, &arg_vec);
 			return;
-
 		}
 	}
 }
 
-sing_exec *make_sing_exec(task * tsk, int *num)
+sing_exec *make_sing_exec(task *tsk)
 {
-	if (*num < 0 || *num > arg_vec.elem_quant - 1)
-		return NULL;
-	int old_num;
 	sing_exec *ex = NULL;
 	ex = (sing_exec *) malloc(sizeof(sing_exec));
 	ex->ios = 0;
-	ex->name = _STR_DUP((char *)table_get(*num, &arg_vec));
-	ex->file = NULL;	/* Временно */
+	ex->name = _STR_DUP((char *)table_get(0, &arg_vec));
+	ex->file = NULL;	
 
 	ex->handler = is_shell_cmd(ex->name);	/* Проверяем, встроена ли функция в оболочку */
 	ex->tsk = tsk;		/* Указываем на принадлежность к заданию */
 	ex->next = NULL;
 
 	/* Выделяем исполняемую единицу из таблицы аргументов */
-	old_num = *num;
-	*num = select_ex(ex, num);
-	check_io(ex, old_num);
-	ex->argv = make_argv(old_num);
+	select_ex(ex);
+	check_io(ex);
+	ex->argv = make_argv();
 
 	return ex;
 }
@@ -359,8 +343,6 @@ sing_exec *make_sing_exec(task * tsk, int *num)
 sing_exec *create_exec_queue(task * tsk)
 {
 	sing_exec *ex, *past, *next;
-
-	int num, p_num;
 
 	if (arg_vec.elem_quant == 0)
 		return NULL;
@@ -373,20 +355,16 @@ sing_exec *create_exec_queue(task * tsk)
 	}
 
 	ex = next = NULL;
-	num = p_num = 0;
 
 	/* Образование самого первого процесса в очереди процессов */
-	ex = make_sing_exec(tsk, &num);
+	past = ex = make_sing_exec(tsk);
 
-	if (ex->ex_mode != NO_EX) {	/* Участвует более одного процесса */
-		past = ex;
-		while (p_num != num) {
-			p_num = num;
-			next = make_sing_exec(tsk, &num);
-			past->next = next;
-			past = next;
-		}
-	}
+	/* Если участвует более одного процесса */
+	while(past->ex_mode != NO_EX) {
+		next = make_sing_exec(tsk);
+		past->next = next;
+		past = next;
+	}	
 
 	return ex;
 }

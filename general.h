@@ -43,9 +43,6 @@ struct termios shell_tmodes;
     /* fd of shell's terminal */
 int sh_terminal;
 
-    /* working mode */
-int sh_is_interactive;
-
 	/* To get current directory */
 char *get_curr_path(char *path);
 

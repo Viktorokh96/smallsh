@@ -46,7 +46,7 @@ int cd_handl(void *prm)
 				}
 			} else {
 				table_add(_STR_DUP(curr_path), &past_path);
-				if (chdir(full_path(argv[1])) != 0) {
+				if (chdir(full_path(argv[1], home_path)) != 0) {
 					printf
 					    ("Такого каталога нет!\n");
 					return 1;
@@ -54,7 +54,7 @@ int cd_handl(void *prm)
 			}
 		} else {
 			table_add(_STR_DUP(curr_path), &past_path);
-			if (chdir(full_path(home_path)) != 0) {
+			if (chdir(full_path(home_path, home_path)) != 0) {
 				printf
 				    ("Такого каталога нет!\n");
 				return 1;
